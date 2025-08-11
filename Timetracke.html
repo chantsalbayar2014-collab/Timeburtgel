@@ -1,0 +1,2763 @@
+<!DOCTYPE html>
+<html lang="mn">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <title>TimeTrack Pro - Цаг бүртгэлийн систем</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        body { font-family: 'Inter', sans-serif; }
+        
+        .gradient-bg {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        
+        .glass-effect {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        .pulse-animation {
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+        
+        .slide-in {
+            animation: slideIn 0.5s ease-out;
+        }
+        
+        @keyframes slideIn {
+            from { transform: translateY(20px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+        
+        /* Утсанд зориулсан тохиргоо */
+        @media (max-width: 768px) {
+            .glass-effect {
+                margin: 1rem;
+                padding: 1.5rem;
+            }
+            
+            .grid {
+                gap: 1rem;
+            }
+            
+            button {
+                min-height: 48px; /* Утсанд дарахад тохиромжтой хэмжээ */
+            }
+            
+            input, select {
+                min-height: 48px;
+                font-size: 16px; /* iOS-д zoom-ыг зогсоох */
+            }
+        }
+        
+        /* Touch-friendly элементүүд */
+        .touch-manipulation {
+            touch-action: manipulation;
+            -webkit-tap-highlight-color: transparent;
+        }
+    </style>
+</head>
+<body class="gradient-bg min-h-screen">
+    <!-- Нэвтрэх хэсэг -->
+    <div id="loginScreen" class="min-h-screen flex items-center justify-center p-4">
+        <div class="glass-effect rounded-2xl p-8 w-full max-w-md slide-in">
+            <div class="text-center mb-8">
+                <div class="w-20 h-20 bg-white rounded-full flex items-center justify-center mx-auto mb-4 pulse-animation">
+                    <span class="text-3xl">⏰</span>
+                </div>
+                <h1 class="text-4xl font-bold text-white mb-2">TimeTrack Pro</h1>
+                <p class="text-white/80 text-lg">Цаг бүртгэлийн систем</p>
+                
+
+            </div>
+            
+            <form id="loginForm" class="space-y-6">
+                <div>
+                    <label class="block text-white/90 text-sm font-medium mb-2">Утасны дугаар</label>
+                    <input type="tel" id="phoneNumber" class="w-full px-4 py-3 rounded-lg bg-white/10 border border-white/20 text-white placeholder-white/60 focus:outline-none focus:ring-2 focus:ring-white/50" placeholder="99123456" required>
+                </div>
+                
+                <div>
+                    <label class="block text-white/90 text-sm font-medium mb-2">Нууц үг</label>
+                    <input type="password" id="password" class="w-full px-4 py-3 rounded-lg bg-white/10 border border-white/20 text-white placeholder-white/60 focus:outline-none focus:ring-2 focus:ring-white/50" placeholder="••••••••" required>
+                </div>
+                
+                <button type="submit" class="w-full bg-white text-purple-700 py-3 rounded-lg font-semibold hover:bg-white/90 transition-all duration-200 transform hover:scale-105">
+                    Нэвтрэх
+                </button>
+                
+                <div class="mt-4 text-center">
+                    <p class="text-white/70 text-sm mb-3">Эсвэл биометрик баталгаажуулалт</p>
+                    <div class="flex flex-col space-y-3 md:flex-row md:space-y-0 md:space-x-3 justify-center">
+                        <button type="button" onclick="authenticateFingerprint()" class="bg-white/20 hover:bg-white/30 active:bg-white/40 text-white px-6 py-4 rounded-lg transition-colors flex items-center justify-center space-x-3 touch-manipulation">
+                            <span class="text-2xl">👆</span>
+                            <span class="text-lg">Хурууны хээ</span>
+                        </button>
+                        <button type="button" onclick="authenticateFace()" class="bg-white/20 hover:bg-white/30 active:bg-white/40 text-white px-6 py-4 rounded-lg transition-colors flex items-center justify-center space-x-3 touch-manipulation">
+                            <span class="text-2xl">👤</span>
+                            <span class="text-lg">Царай таних</span>
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Биометрик тохиргоо хэсэг -->
+    <div id="biometricSetupScreen" class="hidden min-h-screen flex items-center justify-center p-4">
+        <div class="glass-effect rounded-2xl p-8 w-full max-w-md slide-in">
+            <div class="text-center mb-8">
+                <div class="w-16 h-16 bg-white rounded-full flex items-center justify-center mx-auto mb-4">
+                    <span class="text-2xl">🔐</span>
+                </div>
+                <h2 class="text-2xl font-bold text-white mb-2">Биометрик хамгаалалт</h2>
+                <p class="text-white/80">Дараагийн удаа хурдан нэвтрэхийн тулд биометрик хамгаалалт тохируулна уу</p>
+            </div>
+            
+            <div class="space-y-4">
+                <div class="bg-white/10 rounded-lg p-4 border border-white/20">
+                    <div class="flex items-center justify-between mb-3">
+                        <div class="flex items-center space-x-3">
+                            <span class="text-2xl">👆</span>
+                            <div>
+                                <div class="text-white font-medium">Хурууны хээ</div>
+                                <div class="text-white/70 text-sm">Хурууны хээгээр нэвтрэх</div>
+                            </div>
+                        </div>
+                        <input type="checkbox" id="fingerprintCheck" class="w-5 h-5 rounded">
+                    </div>
+                    <button onclick="setupFingerprint()" class="w-full bg-blue-500 hover:bg-blue-600 text-white py-2 rounded-lg transition-colors">
+                        Хурууны хээ бүртгэх
+                    </button>
+                </div>
+                
+                <div class="bg-white/10 rounded-lg p-4 border border-white/20">
+                    <div class="flex items-center justify-between mb-3">
+                        <div class="flex items-center space-x-3">
+                            <span class="text-2xl">👤</span>
+                            <div>
+                                <div class="text-white font-medium">Царай таних</div>
+                                <div class="text-white/70 text-sm">Царайгаар нэвтрэх</div>
+                            </div>
+                        </div>
+                        <input type="checkbox" id="faceCheck" class="w-5 h-5 rounded">
+                    </div>
+                    <button onclick="setupFace()" class="w-full bg-green-500 hover:bg-green-600 text-white py-2 rounded-lg transition-colors">
+                        Царай бүртгэх
+                    </button>
+                </div>
+                
+                <div class="flex space-x-3 mt-6">
+                    <button onclick="skipBiometricSetup()" class="flex-1 bg-gray-500 hover:bg-gray-600 text-white py-3 rounded-lg transition-colors">
+                        Алгасах
+                    </button>
+                    <button onclick="completeBiometricSetup()" class="flex-1 bg-white text-purple-700 py-3 rounded-lg font-semibold hover:bg-white/90 transition-colors">
+                        Дуусгах
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Үндсэн хэсэг -->
+    <div id="mainScreen" class="hidden min-h-screen">
+        <!-- Толгой хэсэг -->
+        <header class="glass-effect p-4">
+            <div class="max-w-6xl mx-auto flex justify-between items-center">
+                <div class="flex items-center space-x-3">
+                    <div class="w-12 h-12 bg-white rounded-full flex items-center justify-center cursor-pointer hover:bg-white/90 transition-colors" onclick="showProfile()">
+                        <span class="text-2xl" id="userAvatar">⏰</span>
+                    </div>
+                    <div>
+                        <h1 class="text-xl font-bold text-white" id="userName">TimeTrack Pro</h1>
+                        <p class="text-white/70 text-sm" id="userPosition">Сайн байна уу!</p>
+                        <p class="text-white/60 text-xs" id="userPhone"></p>
+                    </div>
+                </div>
+                
+                <div class="flex items-center space-x-4">
+                    <div class="text-white text-right">
+                        <div class="text-lg font-semibold" id="currentTime"></div>
+                        <div class="text-sm text-white/70" id="currentDate"></div>
+                    </div>
+                    <button onclick="showChat()" class="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg transition-colors">
+                        💬 Чат
+                    </button>
+                    <button onclick="showAppreciation()" class="bg-yellow-500 hover:bg-yellow-600 text-white px-4 py-2 rounded-lg transition-colors">
+                        🙏 Талархал
+                    </button>
+                    <button onclick="showBiometricSettings()" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg transition-colors">
+                        🔐 Тохиргоо
+                    </button>
+                    <button onclick="showAdminPanel()" id="adminBtn" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg transition-colors hidden">
+                        👨‍💼 Админ
+                    </button>
+                    <button onclick="logout()" class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg transition-colors">
+                        Гарах
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <!-- Үндсэн контент -->
+        <main class="max-w-6xl mx-auto p-6">
+            <!-- Статус карт -->
+            <div class="grid md:grid-cols-3 gap-6 mb-8">
+                <div class="glass-effect rounded-xl p-6 text-center">
+                    <div class="text-3xl mb-2">👥</div>
+                    <div class="text-2xl font-bold text-white" id="totalEmployees">247</div>
+                    <div class="text-white/70">Нийт ажилтан</div>
+                </div>
+                
+                <div class="glass-effect rounded-xl p-6 text-center">
+                    <div class="text-3xl mb-2">✅</div>
+                    <div class="text-2xl font-bold text-green-300" id="checkedIn">189</div>
+                    <div class="text-white/70">Ирсэн</div>
+                </div>
+                
+                <div class="glass-effect rounded-xl p-6 text-center">
+                    <div class="text-3xl mb-2">❌</div>
+                    <div class="text-2xl font-bold text-red-300" id="absent">58</div>
+                    <div class="text-white/70">Ирээгүй</div>
+                </div>
+            </div>
+
+            <!-- Цаг бүртгэх хэсэг -->
+            <div class="glass-effect rounded-xl p-6 mb-8">
+                <h2 class="text-2xl font-bold text-white mb-6 text-center">Цаг бүртгэх</h2>
+                
+                <div class="grid grid-cols-1 gap-4 md:grid-cols-2 md:gap-6">
+                    <button onclick="checkIn()" id="checkInBtn" class="bg-green-500 hover:bg-green-600 active:bg-green-700 text-white py-8 rounded-xl font-semibold text-xl transition-all duration-200 transform active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed touch-manipulation">
+                        <div class="text-4xl mb-3">🟢</div>
+                        Ажилд ирэх
+                    </button>
+                    
+                    <button onclick="checkOut()" id="checkOutBtn" class="bg-red-500 hover:bg-red-600 active:bg-red-700 text-white py-8 rounded-xl font-semibold text-xl transition-all duration-200 transform active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed touch-manipulation" disabled>
+                        <div class="text-4xl mb-3">🔴</div>
+                        Ажлаас гарах
+                    </button>
+                </div>
+                
+                <div id="locationStatus" class="mt-4 p-4 bg-blue-500/20 rounded-lg text-center text-white hidden">
+                    <div class="text-lg">📍 Байршил шалгаж байна...</div>
+                </div>
+                
+                <div id="statusMessage" class="mt-4 p-4 rounded-lg text-center text-white hidden"></div>
+            </div>
+
+            <!-- Ажлын цагийн статус -->
+            <div class="glass-effect rounded-xl p-6 mb-8">
+                <h3 class="text-xl font-bold text-white mb-4">Ажлын цагийн статус</h3>
+                <div id="workStatus" class="grid md:grid-cols-3 gap-4">
+                    <div class="bg-white/10 rounded-lg p-4 text-center">
+                        <div class="text-2xl mb-2">⏰</div>
+                        <div class="text-white font-medium">Ажилласан цаг</div>
+                        <div class="text-2xl font-bold text-blue-300" id="workedHours">0:00</div>
+                    </div>
+                    <div class="bg-white/10 rounded-lg p-4 text-center">
+                        <div class="text-2xl mb-2">🎯</div>
+                        <div class="text-white font-medium">Хэрэгтэй цаг</div>
+                        <div class="text-2xl font-bold text-white" id="requiredHours">8:00</div>
+                    </div>
+                    <div class="bg-white/10 rounded-lg p-4 text-center">
+                        <div class="text-2xl mb-2" id="statusIcon">⏳</div>
+                        <div class="text-white font-medium">Статус</div>
+                        <div class="text-lg font-bold" id="workStatusText">Ажил эхлээгүй</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Өнөөдрийн бүртгэл -->
+            <div class="glass-effect rounded-xl p-6">
+                <h3 class="text-xl font-bold text-white mb-4">Өнөөдрийн миний бүртгэл</h3>
+                <div id="todayRecords" class="space-y-3">
+                    <!-- Бүртгэлүүд энд харагдана -->
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Биометрик тохиргооны модал -->
+    <div id="biometricSettingsModal" class="hidden fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div class="glass-effect rounded-2xl p-6 w-full max-w-md">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-xl font-bold text-white">🔐 Биометрик тохиргоо</h2>
+                <button onclick="hideBiometricSettings()" class="text-white hover:text-red-300 text-2xl">✕</button>
+            </div>
+            
+            <div class="space-y-4">
+                <div class="bg-white/10 rounded-lg p-4">
+                    <div class="flex items-center justify-between mb-3">
+                        <div class="flex items-center space-x-3">
+                            <span class="text-2xl">👆</span>
+                            <div>
+                                <div class="text-white font-medium">Хурууны хээ</div>
+                                <div class="text-white/70 text-sm" id="fingerprintStatus">Бүртгэгдээгүй</div>
+                            </div>
+                        </div>
+                        <button onclick="toggleFingerprint()" id="fingerprintToggle" class="bg-gray-500 hover:bg-gray-600 text-white px-3 py-1 rounded text-sm transition-colors">
+                            Идэвхжүүлэх
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="bg-white/10 rounded-lg p-4">
+                    <div class="flex items-center justify-between mb-3">
+                        <div class="flex items-center space-x-3">
+                            <span class="text-2xl">👤</span>
+                            <div>
+                                <div class="text-white font-medium">Царай таних</div>
+                                <div class="text-white/70 text-sm" id="faceStatus">Бүртгэгдээгүй</div>
+                            </div>
+                        </div>
+                        <button onclick="toggleFace()" id="faceToggle" class="bg-gray-500 hover:bg-gray-600 text-white px-3 py-1 rounded text-sm transition-colors">
+                            Идэвхжүүлэх
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Админ панел -->
+    <div id="adminPanel" class="hidden fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div class="glass-effect rounded-2xl p-6 w-full max-w-4xl max-h-[90vh] overflow-y-auto">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-2xl font-bold text-white">👨‍💼 Админ панел</h2>
+                <button onclick="hideAdminPanel()" class="text-white hover:text-red-300 text-2xl">✕</button>
+            </div>
+            
+            <div class="grid md:grid-cols-3 gap-6">
+                <!-- Ажилтан нэмэх -->
+                <div class="bg-white/10 rounded-xl p-6">
+                    <h3 class="text-xl font-semibold text-white mb-4">➕ Ажилтан нэмэх</h3>
+                    <form id="addEmployeeForm" class="space-y-4">
+                        <input type="text" id="empName" placeholder="Нэр" class="w-full px-4 py-2 rounded-lg bg-white/10 border border-white/20 text-white placeholder-white/60 focus:outline-none focus:ring-2 focus:ring-white/50" required>
+                        <input type="tel" id="empPhone" placeholder="Утасны дугаар" class="w-full px-4 py-2 rounded-lg bg-white/10 border border-white/20 text-white placeholder-white/60 focus:outline-none focus:ring-2 focus:ring-white/50" required>
+                        <input type="text" id="empPosition" placeholder="Албан тушаал" class="w-full px-4 py-2 rounded-lg bg-white/10 border border-white/20 text-white placeholder-white/60 focus:outline-none focus:ring-2 focus:ring-white/50" required>
+                        <input type="password" id="empPassword" placeholder="Нууц үг" class="w-full px-4 py-2 rounded-lg bg-white/10 border border-white/20 text-white placeholder-white/60 focus:outline-none focus:ring-2 focus:ring-white/50" required>
+                        
+                        <!-- Цагийн хуваарь -->
+                        <div class="bg-white/5 rounded-lg p-4 border border-white/10">
+                            <div class="text-white font-medium mb-3 flex items-center">
+                                <span class="mr-2">⏰</span>
+                                Цагийн хуваарь
+                            </div>
+                            
+                            <div class="grid grid-cols-2 gap-3 mb-3">
+                                <div>
+                                    <label class="block text-white/70 text-sm mb-1">Ирэх цаг</label>
+                                    <input type="time" id="empStartTime" value="09:00" class="w-full px-3 py-2 rounded-lg bg-white/10 border border-white/20 text-white focus:outline-none focus:ring-2 focus:ring-white/50">
+                                </div>
+                                <div>
+                                    <label class="block text-white/70 text-sm mb-1">Гарах цаг</label>
+                                    <input type="time" id="empEndTime" value="18:00" class="w-full px-3 py-2 rounded-lg bg-white/10 border border-white/20 text-white focus:outline-none focus:ring-2 focus:ring-white/50">
+                                </div>
+                            </div>
+                            
+                            <div class="text-white/70 text-sm mb-2">Ажлын өдрүүд:</div>
+                            <div class="grid grid-cols-4 gap-2">
+                                <label class="flex items-center space-x-2 text-sm">
+                                    <input type="checkbox" id="empMon" checked class="rounded">
+                                    <span class="text-white/80">Да</span>
+                                </label>
+                                <label class="flex items-center space-x-2 text-sm">
+                                    <input type="checkbox" id="empTue" checked class="rounded">
+                                    <span class="text-white/80">Мя</span>
+                                </label>
+                                <label class="flex items-center space-x-2 text-sm">
+                                    <input type="checkbox" id="empWed" checked class="rounded">
+                                    <span class="text-white/80">Лх</span>
+                                </label>
+                                <label class="flex items-center space-x-2 text-sm">
+                                    <input type="checkbox" id="empThu" checked class="rounded">
+                                    <span class="text-white/80">Пү</span>
+                                </label>
+                                <label class="flex items-center space-x-2 text-sm">
+                                    <input type="checkbox" id="empFri" checked class="rounded">
+                                    <span class="text-white/80">Ба</span>
+                                </label>
+                                <label class="flex items-center space-x-2 text-sm">
+                                    <input type="checkbox" id="empSat" class="rounded">
+                                    <span class="text-white/80">Бя</span>
+                                </label>
+                                <label class="flex items-center space-x-2 text-sm">
+                                    <input type="checkbox" id="empSun" class="rounded">
+                                    <span class="text-white/80">Ня</span>
+                                </label>
+                            </div>
+                            
+                            <div class="flex space-x-2 mt-3">
+                                <button type="button" onclick="setEmployeeScheduleTemplate('standard')" class="flex-1 bg-blue-500/30 hover:bg-blue-500/50 text-white py-1 px-2 rounded text-xs transition-colors">
+                                    Стандарт
+                                </button>
+                                <button type="button" onclick="setEmployeeScheduleTemplate('flexible')" class="flex-1 bg-green-500/30 hover:bg-green-500/50 text-white py-1 px-2 rounded text-xs transition-colors">
+                                    Уян хатан
+                                </button>
+                                <button type="button" onclick="setEmployeeScheduleTemplate('early')" class="flex-1 bg-yellow-500/30 hover:bg-yellow-500/50 text-white py-1 px-2 rounded text-xs transition-colors">
+                                    Эрт
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <button type="submit" class="w-full bg-green-500 hover:bg-green-600 text-white py-2 rounded-lg transition-colors">
+                            Ажилтан нэмэх
+                        </button>
+                    </form>
+                </div>
+                
+                <!-- Ажилтны жагсаалт -->
+                <div class="bg-white/10 rounded-xl p-6">
+                    <h3 class="text-xl font-semibold text-white mb-4">👥 Ажилтны жагсаалт</h3>
+                    <div class="space-y-3 max-h-96 overflow-y-auto" id="employeeList">
+                        <div class="bg-white/10 rounded-lg p-3">
+                            <div class="flex justify-between items-start mb-2">
+                                <div>
+                                    <div class="text-white font-medium">Батбаяр</div>
+                                    <div class="text-white/70 text-sm">99123456 • Програмист</div>
+                                    <div class="text-green-300 text-xs">👆👤 Биометрик бүртгэлтэй</div>
+                                </div>
+                                <div class="flex space-x-2">
+                                    <button onclick="editSchedule('99123456', 'Батбаяр')" class="text-blue-400 hover:text-blue-300">⏰</button>
+                                    <button onclick="removeEmployee('99123456')" class="text-red-400 hover:text-red-300">🗑️</button>
+                                </div>
+                            </div>
+                            <div class="flex justify-between items-center text-xs">
+                                <span class="text-green-300">✅ Бүрэн ажилласан (8:15)</span>
+                                <span class="text-white/70">09:00-18:15</span>
+                            </div>
+                        </div>
+                        
+                        <div class="bg-white/10 rounded-lg p-3">
+                            <div class="flex justify-between items-start mb-2">
+                                <div>
+                                    <div class="text-white font-medium">Сарангэрэл</div>
+                                    <div class="text-white/70 text-sm">99234567 • Дизайнер</div>
+                                    <div class="text-yellow-300 text-xs">👆 Хурууны хээ бүртгэлтэй</div>
+                                </div>
+                                <div class="flex space-x-2">
+                                    <button onclick="editSchedule('99234567', 'Сарангэрэл')" class="text-blue-400 hover:text-blue-300">⏰</button>
+                                    <button onclick="removeEmployee('99234567')" class="text-red-400 hover:text-red-300">🗑️</button>
+                                </div>
+                            </div>
+                            <div class="flex justify-between items-center text-xs">
+                                <span class="text-yellow-300">⚠️ Хоцорсон (6:30)</span>
+                                <span class="text-white/70">10:30-17:00</span>
+                            </div>
+                        </div>
+                        
+                        <div class="bg-white/10 rounded-lg p-3">
+                            <div class="flex justify-between items-start mb-2">
+                                <div>
+                                    <div class="text-white font-medium">Болдбаатар</div>
+                                    <div class="text-white/70 text-sm">99345678 • Менежер</div>
+                                    <div class="text-blue-300 text-xs">👤 Царай таних бүртгэлтэй</div>
+                                </div>
+                                <div class="flex space-x-2">
+                                    <button onclick="editSchedule('99345678', 'Болдбаатар')" class="text-blue-400 hover:text-blue-300">⏰</button>
+                                    <button onclick="removeEmployee('99345678')" class="text-red-400 hover:text-red-300">🗑️</button>
+                                </div>
+                            </div>
+                            <div class="flex justify-between items-center text-xs">
+                                <span class="text-red-300">❌ Тал ажилласан (4:45)</span>
+                                <span class="text-white/70">08:30-13:15</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Цагийн хуваарь -->
+                <div class="bg-white/10 rounded-xl p-6">
+                    <h3 class="text-xl font-semibold text-white mb-4">⏰ Цагийн хуваарь</h3>
+                    <div class="space-y-3">
+                        <div class="bg-white/10 rounded-lg p-3">
+                            <div class="text-white font-medium mb-2">Стандарт цаг</div>
+                            <div class="grid grid-cols-2 gap-2 text-sm">
+                                <div class="text-white/70">Ирэх: 09:00</div>
+                                <div class="text-white/70">Гарах: 18:00</div>
+                            </div>
+                        </div>
+                        
+                        <div class="bg-white/10 rounded-lg p-3">
+                            <div class="text-white font-medium mb-2">Өнөөдрийн хуваарь</div>
+                            <div class="space-y-1 text-sm">
+                                <div class="flex justify-between">
+                                    <span class="text-white/70">Батбаяр</span>
+                                    <span class="text-green-300">09:00-18:00</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-white/70">Сарангэрэл</span>
+                                    <span class="text-blue-300">10:00-19:00</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-white/70">Болдбаатар</span>
+                                    <span class="text-yellow-300">08:30-17:30</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <button onclick="showBulkSchedule()" class="w-full bg-purple-500 hover:bg-purple-600 text-white py-2 rounded-lg transition-colors">
+                            📅 Бүх ажилтны хуваарь
+                        </button>
+                        
+                        <button onclick="showNotificationSettings()" class="w-full bg-orange-500 hover:bg-orange-600 text-white py-2 rounded-lg transition-colors">
+                            📧 Мэдэгдэл тохиргоо
+                        </button>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Тайлан хэсэг -->
+            <div class="mt-6 bg-white/10 rounded-xl p-6">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-xl font-semibold text-white">📊 Тайлан</h3>
+                    <button onclick="showDetailedReports()" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg transition-colors text-sm">
+                        📈 Дэлгэрэнгүй тайлан
+                    </button>
+                </div>
+                <div class="grid md:grid-cols-4 gap-4">
+                    <div class="text-center">
+                        <div class="text-2xl font-bold text-white">247</div>
+                        <div class="text-white/70 text-sm">Нийт ажилтан</div>
+                    </div>
+                    <div class="text-center">
+                        <div class="text-2xl font-bold text-green-300">189</div>
+                        <div class="text-white/70 text-sm">Өнөөдөр ирсэн</div>
+                    </div>
+                    <div class="text-center">
+                        <div class="text-2xl font-bold text-blue-300">156</div>
+                        <div class="text-white/70 text-sm">Биометрик бүртгэлтэй</div>
+                    </div>
+                    <div class="text-center">
+                        <div class="text-2xl font-bold text-yellow-300">91</div>
+                        <div class="text-white/70 text-sm">Хоцорсон</div>
+                    </div>
+                </div>
+                
+                <!-- Real-time статистик -->
+                <div class="mt-6 grid md:grid-cols-3 gap-4">
+                    <div class="bg-white/5 rounded-lg p-4 text-center">
+                        <div class="text-lg font-bold text-blue-300" id="avgWorkHours">7.8</div>
+                        <div class="text-white/70 text-sm">Дундаж ажлын цаг</div>
+                    </div>
+                    <div class="bg-white/5 rounded-lg p-4 text-center">
+                        <div class="text-lg font-bold text-green-300" id="onTimeRate">85%</div>
+                        <div class="text-white/70 text-sm">Цагтаа ирэх хувь</div>
+                    </div>
+                    <div class="bg-white/5 rounded-lg p-4 text-center">
+                        <div class="text-lg font-bold text-purple-300" id="productivityScore">92</div>
+                        <div class="text-white/70 text-sm">Бүтээмжийн оноо</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Цагийн хуваарийн модал -->
+    <div id="scheduleModal" class="hidden fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div class="glass-effect rounded-2xl p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-xl font-bold text-white" id="scheduleModalTitle">⏰ Цагийн хуваарь тохируулах</h2>
+                <button onclick="hideScheduleModal()" class="text-white hover:text-red-300 text-2xl">✕</button>
+            </div>
+            
+            <div class="space-y-4">
+                <div class="grid grid-cols-7 gap-2 text-center text-sm">
+                    <div class="text-white/70 font-medium">Даваа</div>
+                    <div class="text-white/70 font-medium">Мягмар</div>
+                    <div class="text-white/70 font-medium">Лхавга</div>
+                    <div class="text-white/70 font-medium">Пүрэв</div>
+                    <div class="text-white/70 font-medium">Баасан</div>
+                    <div class="text-white/70 font-medium">Бямба</div>
+                    <div class="text-white/70 font-medium">Ням</div>
+                </div>
+                
+                <div class="grid grid-cols-7 gap-2" id="weeklySchedule">
+                    <!-- Даваа -->
+                    <div class="bg-white/10 rounded-lg p-3 space-y-2">
+                        <label class="flex items-center space-x-2">
+                            <input type="checkbox" id="mon_active" checked class="rounded">
+                            <span class="text-white text-xs">Идэвхтэй</span>
+                        </label>
+                        <input type="time" id="mon_start" value="09:00" class="w-full px-2 py-1 rounded bg-white/10 text-white text-xs border border-white/20">
+                        <input type="time" id="mon_end" value="18:00" class="w-full px-2 py-1 rounded bg-white/10 text-white text-xs border border-white/20">
+                    </div>
+                    
+                    <!-- Мягмар -->
+                    <div class="bg-white/10 rounded-lg p-3 space-y-2">
+                        <label class="flex items-center space-x-2">
+                            <input type="checkbox" id="tue_active" checked class="rounded">
+                            <span class="text-white text-xs">Идэвхтэй</span>
+                        </label>
+                        <input type="time" id="tue_start" value="09:00" class="w-full px-2 py-1 rounded bg-white/10 text-white text-xs border border-white/20">
+                        <input type="time" id="tue_end" value="18:00" class="w-full px-2 py-1 rounded bg-white/10 text-white text-xs border border-white/20">
+                    </div>
+                    
+                    <!-- Лхавга -->
+                    <div class="bg-white/10 rounded-lg p-3 space-y-2">
+                        <label class="flex items-center space-x-2">
+                            <input type="checkbox" id="wed_active" checked class="rounded">
+                            <span class="text-white text-xs">Идэвхтэй</span>
+                        </label>
+                        <input type="time" id="wed_start" value="09:00" class="w-full px-2 py-1 rounded bg-white/10 text-white text-xs border border-white/20">
+                        <input type="time" id="wed_end" value="18:00" class="w-full px-2 py-1 rounded bg-white/10 text-white text-xs border border-white/20">
+                    </div>
+                    
+                    <!-- Пүрэв -->
+                    <div class="bg-white/10 rounded-lg p-3 space-y-2">
+                        <label class="flex items-center space-x-2">
+                            <input type="checkbox" id="thu_active" checked class="rounded">
+                            <span class="text-white text-xs">Идэвхтэй</span>
+                        </label>
+                        <input type="time" id="thu_start" value="09:00" class="w-full px-2 py-1 rounded bg-white/10 text-white text-xs border border-white/20">
+                        <input type="time" id="thu_end" value="18:00" class="w-full px-2 py-1 rounded bg-white/10 text-white text-xs border border-white/20">
+                    </div>
+                    
+                    <!-- Баасан -->
+                    <div class="bg-white/10 rounded-lg p-3 space-y-2">
+                        <label class="flex items-center space-x-2">
+                            <input type="checkbox" id="fri_active" checked class="rounded">
+                            <span class="text-white text-xs">Идэвхтэй</span>
+                        </label>
+                        <input type="time" id="fri_start" value="09:00" class="w-full px-2 py-1 rounded bg-white/10 text-white text-xs border border-white/20">
+                        <input type="time" id="fri_end" value="18:00" class="w-full px-2 py-1 rounded bg-white/10 text-white text-xs border border-white/20">
+                    </div>
+                    
+                    <!-- Бямба -->
+                    <div class="bg-white/10 rounded-lg p-3 space-y-2">
+                        <label class="flex items-center space-x-2">
+                            <input type="checkbox" id="sat_active" class="rounded">
+                            <span class="text-white text-xs">Идэвхтэй</span>
+                        </label>
+                        <input type="time" id="sat_start" value="09:00" class="w-full px-2 py-1 rounded bg-white/10 text-white text-xs border border-white/20">
+                        <input type="time" id="sat_end" value="18:00" class="w-full px-2 py-1 rounded bg-white/10 text-white text-xs border border-white/20">
+                    </div>
+                    
+                    <!-- Ням -->
+                    <div class="bg-white/10 rounded-lg p-3 space-y-2">
+                        <label class="flex items-center space-x-2">
+                            <input type="checkbox" id="sun_active" class="rounded">
+                            <span class="text-white text-xs">Идэвхтэй</span>
+                        </label>
+                        <input type="time" id="sun_start" value="09:00" class="w-full px-2 py-1 rounded bg-white/10 text-white text-xs border border-white/20">
+                        <input type="time" id="sun_end" value="18:00" class="w-full px-2 py-1 rounded bg-white/10 text-white text-xs border border-white/20">
+                    </div>
+                </div>
+                
+                <div class="flex space-x-3 mt-6">
+                    <button onclick="applyScheduleTemplate('standard')" class="flex-1 bg-blue-500 hover:bg-blue-600 text-white py-2 rounded-lg transition-colors text-sm">
+                        📋 Стандарт (9:00-18:00)
+                    </button>
+                    <button onclick="applyScheduleTemplate('flexible')" class="flex-1 bg-green-500 hover:bg-green-600 text-white py-2 rounded-lg transition-colors text-sm">
+                        🕐 Уян хатан (10:00-19:00)
+                    </button>
+                    <button onclick="applyScheduleTemplate('early')" class="flex-1 bg-yellow-500 hover:bg-yellow-600 text-white py-2 rounded-lg transition-colors text-sm">
+                        🌅 Эрт (8:00-17:00)
+                    </button>
+                </div>
+                
+                <div class="flex space-x-3 mt-4">
+                    <button onclick="hideScheduleModal()" class="flex-1 bg-gray-500 hover:bg-gray-600 text-white py-3 rounded-lg transition-colors">
+                        Цуцлах
+                    </button>
+                    <button onclick="saveSchedule()" class="flex-1 bg-white text-purple-700 py-3 rounded-lg font-semibold hover:bg-white/90 transition-colors">
+                        Хадгалах
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Бүх ажилтны хуваарийн модал -->
+    <div id="bulkScheduleModal" class="hidden fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div class="glass-effect rounded-2xl p-6 w-full max-w-6xl max-h-[90vh] overflow-y-auto">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-2xl font-bold text-white">📅 Бүх ажилтны цагийн хуваарь</h2>
+                <button onclick="hideBulkSchedule()" class="text-white hover:text-red-300 text-2xl">✕</button>
+            </div>
+            
+            <div class="overflow-x-auto">
+                <table class="w-full text-sm">
+                    <thead>
+                        <tr class="border-b border-white/20">
+                            <th class="text-left text-white font-medium p-3">Ажилтан</th>
+                            <th class="text-center text-white font-medium p-3">Даваа</th>
+                            <th class="text-center text-white font-medium p-3">Мягмар</th>
+                            <th class="text-center text-white font-medium p-3">Лхавга</th>
+                            <th class="text-center text-white font-medium p-3">Пүрэв</th>
+                            <th class="text-center text-white font-medium p-3">Баасан</th>
+                            <th class="text-center text-white font-medium p-3">Бямба</th>
+                            <th class="text-center text-white font-medium p-3">Ням</th>
+                        </tr>
+                    </thead>
+                    <tbody id="bulkScheduleTable">
+                        <tr class="border-b border-white/10">
+                            <td class="p-3">
+                                <div class="text-white font-medium">Батбаяр</div>
+                                <div class="text-white/70 text-xs">Програмист</div>
+                            </td>
+                            <td class="text-center p-3 text-green-300">09:00-18:00</td>
+                            <td class="text-center p-3 text-green-300">09:00-18:00</td>
+                            <td class="text-center p-3 text-green-300">09:00-18:00</td>
+                            <td class="text-center p-3 text-green-300">09:00-18:00</td>
+                            <td class="text-center p-3 text-green-300">09:00-18:00</td>
+                            <td class="text-center p-3 text-red-300">Амралт</td>
+                            <td class="text-center p-3 text-red-300">Амралт</td>
+                        </tr>
+                        <tr class="border-b border-white/10">
+                            <td class="p-3">
+                                <div class="text-white font-medium">Сарангэрэл</div>
+                                <div class="text-white/70 text-xs">Дизайнер</div>
+                            </td>
+                            <td class="text-center p-3 text-blue-300">10:00-19:00</td>
+                            <td class="text-center p-3 text-blue-300">10:00-19:00</td>
+                            <td class="text-center p-3 text-blue-300">10:00-19:00</td>
+                            <td class="text-center p-3 text-blue-300">10:00-19:00</td>
+                            <td class="text-center p-3 text-blue-300">10:00-19:00</td>
+                            <td class="text-center p-3 text-blue-300">10:00-15:00</td>
+                            <td class="text-center p-3 text-red-300">Амралт</td>
+                        </tr>
+                        <tr class="border-b border-white/10">
+                            <td class="p-3">
+                                <div class="text-white font-medium">Болдбаатар</div>
+                                <div class="text-white/70 text-xs">Менежер</div>
+                            </td>
+                            <td class="text-center p-3 text-yellow-300">08:30-17:30</td>
+                            <td class="text-center p-3 text-yellow-300">08:30-17:30</td>
+                            <td class="text-center p-3 text-yellow-300">08:30-17:30</td>
+                            <td class="text-center p-3 text-yellow-300">08:30-17:30</td>
+                            <td class="text-center p-3 text-yellow-300">08:30-17:30</td>
+                            <td class="text-center p-3 text-red-300">Амралт</td>
+                            <td class="text-center p-3 text-red-300">Амралт</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Биометрик баталгаажуулалтын модал -->
+    <div id="biometricModal" class="hidden fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div class="glass-effect rounded-2xl p-8 w-full max-w-md text-center">
+            <div id="biometricContent">
+                <!-- Динамик контент -->
+            </div>
+            <button onclick="hideBiometricModal()" class="mt-4 bg-red-500 hover:bg-red-600 text-white px-6 py-2 rounded-lg transition-colors">
+                Цуцлах
+            </button>
+        </div>
+    </div>
+
+    <!-- Профайл модал -->
+    <div id="profileModal" class="hidden fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div class="glass-effect rounded-2xl p-6 w-full max-w-md">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-xl font-bold text-white">👤 Миний профайл</h2>
+                <button onclick="hideProfile()" class="text-white hover:text-red-300 text-2xl">✕</button>
+            </div>
+            
+            <div class="text-center mb-6">
+                <div class="w-24 h-24 bg-white rounded-full flex items-center justify-center mx-auto mb-4 cursor-pointer hover:bg-white/90 transition-colors" onclick="showAvatarSelector()">
+                    <span class="text-4xl" id="profileAvatar">👤</span>
+                </div>
+                <h3 class="text-xl font-bold text-white" id="profileName">Хэрэглэгч</h3>
+                <p class="text-white/70" id="profilePosition">Албан тушаал</p>
+                <p class="text-white/60 text-sm" id="profilePhone">Утасны дугаар</p>
+            </div>
+            
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-white/90 text-sm font-medium mb-2">Нэр</label>
+                    <input type="text" id="editName" class="w-full px-4 py-2 rounded-lg bg-white/10 border border-white/20 text-white placeholder-white/60 focus:outline-none focus:ring-2 focus:ring-white/50">
+                </div>
+                
+                <div>
+                    <label class="block text-white/90 text-sm font-medium mb-2">Албан тушаал</label>
+                    <input type="text" id="editPosition" class="w-full px-4 py-2 rounded-lg bg-white/10 border border-white/20 text-white placeholder-white/60 focus:outline-none focus:ring-2 focus:ring-white/50">
+                </div>
+                
+                <div class="flex space-x-3 mt-6">
+                    <button onclick="hideProfile()" class="flex-1 bg-gray-500 hover:bg-gray-600 text-white py-3 rounded-lg transition-colors">
+                        Цуцлах
+                    </button>
+                    <button onclick="saveProfile()" class="flex-1 bg-white text-purple-700 py-3 rounded-lg font-semibold hover:bg-white/90 transition-colors">
+                        Хадгалах
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Аватар сонгох модал -->
+    <div id="avatarModal" class="hidden fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div class="glass-effect rounded-2xl p-6 w-full max-w-lg">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-xl font-bold text-white">🎭 Аватар сонгох</h2>
+                <button onclick="hideAvatarSelector()" class="text-white hover:text-red-300 text-2xl">✕</button>
+            </div>
+            
+            <div class="grid grid-cols-6 gap-4 mb-6">
+                <div class="w-16 h-16 bg-white/10 rounded-full flex items-center justify-center cursor-pointer hover:bg-white/20 transition-colors" onclick="selectAvatar('👤')">
+                    <span class="text-2xl">👤</span>
+                </div>
+                <div class="w-16 h-16 bg-white/10 rounded-full flex items-center justify-center cursor-pointer hover:bg-white/20 transition-colors" onclick="selectAvatar('👨‍💻')">
+                    <span class="text-2xl">👨‍💻</span>
+                </div>
+                <div class="w-16 h-16 bg-white/10 rounded-full flex items-center justify-center cursor-pointer hover:bg-white/20 transition-colors" onclick="selectAvatar('👩‍💻')">
+                    <span class="text-2xl">👩‍💻</span>
+                </div>
+                <div class="w-16 h-16 bg-white/10 rounded-full flex items-center justify-center cursor-pointer hover:bg-white/20 transition-colors" onclick="selectAvatar('👨‍💼')">
+                    <span class="text-2xl">👨‍💼</span>
+                </div>
+                <div class="w-16 h-16 bg-white/10 rounded-full flex items-center justify-center cursor-pointer hover:bg-white/20 transition-colors" onclick="selectAvatar('👩‍💼')">
+                    <span class="text-2xl">👩‍💼</span>
+                </div>
+                <div class="w-16 h-16 bg-white/10 rounded-full flex items-center justify-center cursor-pointer hover:bg-white/20 transition-colors" onclick="selectAvatar('👨‍🎨')">
+                    <span class="text-2xl">👨‍🎨</span>
+                </div>
+                <div class="w-16 h-16 bg-white/10 rounded-full flex items-center justify-center cursor-pointer hover:bg-white/20 transition-colors" onclick="selectAvatar('👩‍🎨')">
+                    <span class="text-2xl">👩‍🎨</span>
+                </div>
+                <div class="w-16 h-16 bg-white/10 rounded-full flex items-center justify-center cursor-pointer hover:bg-white/20 transition-colors" onclick="selectAvatar('👨‍🔧')">
+                    <span class="text-2xl">👨‍🔧</span>
+                </div>
+                <div class="w-16 h-16 bg-white/10 rounded-full flex items-center justify-center cursor-pointer hover:bg-white/20 transition-colors" onclick="selectAvatar('👩‍🔧')">
+                    <span class="text-2xl">👩‍🔧</span>
+                </div>
+                <div class="w-16 h-16 bg-white/10 rounded-full flex items-center justify-center cursor-pointer hover:bg-white/20 transition-colors" onclick="selectAvatar('👨‍🏫')">
+                    <span class="text-2xl">👨‍🏫</span>
+                </div>
+                <div class="w-16 h-16 bg-white/10 rounded-full flex items-center justify-center cursor-pointer hover:bg-white/20 transition-colors" onclick="selectAvatar('👩‍🏫')">
+                    <span class="text-2xl">👩‍🏫</span>
+                </div>
+                <div class="w-16 h-16 bg-white/10 rounded-full flex items-center justify-center cursor-pointer hover:bg-white/20 transition-colors" onclick="selectAvatar('👨‍⚕️')">
+                    <span class="text-2xl">👨‍⚕️</span>
+                </div>
+                <div class="w-16 h-16 bg-white/10 rounded-full flex items-center justify-center cursor-pointer hover:bg-white/20 transition-colors" onclick="selectAvatar('👩‍⚕️')">
+                    <span class="text-2xl">👩‍⚕️</span>
+                </div>
+                <div class="w-16 h-16 bg-white/10 rounded-full flex items-center justify-center cursor-pointer hover:bg-white/20 transition-colors" onclick="selectAvatar('👨‍🍳')">
+                    <span class="text-2xl">👨‍🍳</span>
+                </div>
+                <div class="w-16 h-16 bg-white/10 rounded-full flex items-center justify-center cursor-pointer hover:bg-white/20 transition-colors" onclick="selectAvatar('👩‍🍳')">
+                    <span class="text-2xl">👩‍🍳</span>
+                </div>
+                <div class="w-16 h-16 bg-white/10 rounded-full flex items-center justify-center cursor-pointer hover:bg-white/20 transition-colors" onclick="selectAvatar('🧑‍💼')">
+                    <span class="text-2xl">🧑‍💼</span>
+                </div>
+                <div class="w-16 h-16 bg-white/10 rounded-full flex items-center justify-center cursor-pointer hover:bg-white/20 transition-colors" onclick="selectAvatar('🧑‍🎓')">
+                    <span class="text-2xl">🧑‍🎓</span>
+                </div>
+                <div class="w-16 h-16 bg-white/10 rounded-full flex items-center justify-center cursor-pointer hover:bg-white/20 transition-colors" onclick="selectAvatar('🧑‍🚀')">
+                    <span class="text-2xl">🧑‍🚀</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Чат модал -->
+    <div id="chatModal" class="hidden fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div class="glass-effect rounded-2xl p-6 w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-xl font-bold text-white">💬 Ажилтантай чат</h2>
+                <button onclick="hideChat()" class="text-white hover:text-red-300 text-2xl">✕</button>
+            </div>
+            
+            <div class="flex-1 flex">
+                <!-- Ажилтны жагсаалт -->
+                <div class="w-1/3 border-r border-white/20 pr-4">
+                    <h3 class="text-white font-medium mb-3">Ажилтнууд</h3>
+                    <div class="space-y-2 max-h-96 overflow-y-auto" id="employeeListChat">
+                        <!-- Ажилтны жагсаалт энд -->
+                    </div>
+                </div>
+                
+                <!-- Чат хэсэг -->
+                <div class="flex-1 pl-4 flex flex-col">
+                    <div id="chatHeader" class="text-white font-medium mb-3 hidden">
+                        <span id="chatWithName">Хэрэглэгч сонгоно уу</span>
+                    </div>
+                    
+                    <div id="chatMessages" class="flex-1 bg-white/5 rounded-lg p-4 mb-4 max-h-64 overflow-y-auto">
+                        <div class="text-white/70 text-center">Хэрэглэгч сонгоод чат эхлүүлнэ үү</div>
+                    </div>
+                    
+                    <div class="flex space-x-2">
+                        <input type="text" id="chatInput" placeholder="Мессеж бичнэ үү..." class="flex-1 px-4 py-2 rounded-lg bg-white/10 border border-white/20 text-white placeholder-white/60 focus:outline-none focus:ring-2 focus:ring-white/50" disabled>
+                        <button onclick="sendMessage()" id="sendBtn" class="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg transition-colors disabled:opacity-50" disabled>
+                            Илгээх
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Мэдэгдэлийн тохиргооны модал -->
+    <div id="notificationModal" class="hidden fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div class="glass-effect rounded-2xl p-6 w-full max-w-3xl max-h-[90vh] overflow-y-auto">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-xl font-bold text-white">📧 Мэдэгдэлийн тохиргоо</h2>
+                <button onclick="hideNotificationSettings()" class="text-white hover:text-red-300 text-2xl">✕</button>
+            </div>
+            
+            <div class="grid md:grid-cols-2 gap-6">
+                <!-- Email тохиргоо -->
+                <div class="bg-white/10 rounded-xl p-6">
+                    <h3 class="text-lg font-semibold text-white mb-4">📧 Email мэдэгдэл</h3>
+                    
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-white/90 text-sm font-medium mb-2">SMTP сервер</label>
+                            <input type="text" id="smtpServer" placeholder="smtp.gmail.com" class="w-full px-4 py-2 rounded-lg bg-white/10 border border-white/20 text-white placeholder-white/60 focus:outline-none focus:ring-2 focus:ring-white/50">
+                        </div>
+                        
+                        <div class="grid grid-cols-2 gap-3">
+                            <div>
+                                <label class="block text-white/90 text-sm font-medium mb-2">Порт</label>
+                                <input type="number" id="smtpPort" placeholder="587" class="w-full px-4 py-2 rounded-lg bg-white/10 border border-white/20 text-white placeholder-white/60 focus:outline-none focus:ring-2 focus:ring-white/50">
+                            </div>
+                            <div>
+                                <label class="flex items-center space-x-2 mt-8">
+                                    <input type="checkbox" id="smtpSSL" class="rounded">
+                                    <span class="text-white text-sm">SSL ашиглах</span>
+                                </label>
+                            </div>
+                        </div>
+                        
+                        <div>
+                            <label class="block text-white/90 text-sm font-medium mb-2">Email хаяг</label>
+                            <input type="email" id="smtpEmail" placeholder="company@gmail.com" class="w-full px-4 py-2 rounded-lg bg-white/10 border border-white/20 text-white placeholder-white/60 focus:outline-none focus:ring-2 focus:ring-white/50">
+                        </div>
+                        
+                        <div>
+                            <label class="block text-white/90 text-sm font-medium mb-2">Нууц үг</label>
+                            <input type="password" id="smtpPassword" placeholder="••••••••" class="w-full px-4 py-2 rounded-lg bg-white/10 border border-white/20 text-white placeholder-white/60 focus:outline-none focus:ring-2 focus:ring-white/50">
+                        </div>
+                        
+                        <button onclick="testEmailSettings()" class="w-full bg-green-500 hover:bg-green-600 text-white py-2 rounded-lg transition-colors">
+                            📧 Email тест илгээх
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- SMS тохиргоо -->
+                <div class="bg-white/10 rounded-xl p-6">
+                    <h3 class="text-lg font-semibold text-white mb-4">📱 SMS мэдэгдэл</h3>
+                    
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-white/90 text-sm font-medium mb-2">SMS API түлхүүр</label>
+                            <input type="text" id="smsApiKey" placeholder="API Key" class="w-full px-4 py-2 rounded-lg bg-white/10 border border-white/20 text-white placeholder-white/60 focus:outline-none focus:ring-2 focus:ring-white/50">
+                        </div>
+                        
+                        <div>
+                            <label class="block text-white/90 text-sm font-medium mb-2">SMS үйлчилгээ</label>
+                            <select id="smsProvider" class="w-full px-4 py-2 rounded-lg bg-white/10 border border-white/20 text-white focus:outline-none focus:ring-2 focus:ring-white/50">
+                                <option value="twilio">Twilio</option>
+                                <option value="nexmo">Nexmo</option>
+                                <option value="local">Дотоодын SMS</option>
+                            </select>
+                        </div>
+                        
+                        <div>
+                            <label class="block text-white/90 text-sm font-medium mb-2">Илгээгчийн дугаар</label>
+                            <input type="tel" id="smsFrom" placeholder="+976 XXXX XXXX" class="w-full px-4 py-2 rounded-lg bg-white/10 border border-white/20 text-white placeholder-white/60 focus:outline-none focus:ring-2 focus:ring-white/50">
+                        </div>
+                        
+                        <button onclick="testSMSSettings()" class="w-full bg-blue-500 hover:bg-blue-600 text-white py-2 rounded-lg transition-colors">
+                            📱 SMS тест илгээх
+                        </button>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Мэдэгдлийн төрлүүд -->
+            <div class="mt-6 bg-white/10 rounded-xl p-6">
+                <h3 class="text-lg font-semibold text-white mb-4">🔔 Мэдэгдлийн төрлүүд</h3>
+                
+                <div class="grid md:grid-cols-2 gap-4">
+                    <div class="space-y-3">
+                        <label class="flex items-center justify-between">
+                            <span class="text-white">Хоцорсон ажилтан</span>
+                            <input type="checkbox" id="notifyLate" checked class="rounded">
+                        </label>
+                        <label class="flex items-center justify-between">
+                            <span class="text-white">Ирээгүй ажилтан</span>
+                            <input type="checkbox" id="notifyAbsent" checked class="rounded">
+                        </label>
+                        <label class="flex items-center justify-between">
+                            <span class="text-white">Эрт гарсан ажилтан</span>
+                            <input type="checkbox" id="notifyEarlyLeave" checked class="rounded">
+                        </label>
+                    </div>
+                    <div class="space-y-3">
+                        <label class="flex items-center justify-between">
+                            <span class="text-white">Илүү цаг ажилласан</span>
+                            <input type="checkbox" id="notifyOvertime" checked class="rounded">
+                        </label>
+                        <label class="flex items-center justify-between">
+                            <span class="text-white">Өдрийн тайлан</span>
+                            <input type="checkbox" id="notifyDailyReport" checked class="rounded">
+                        </label>
+                        <label class="flex items-center justify-between">
+                            <span class="text-white">Долоо хоногийн тайлан</span>
+                            <input type="checkbox" id="notifyWeeklyReport" class="rounded">
+                        </label>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="flex space-x-3 mt-6">
+                <button onclick="hideNotificationSettings()" class="flex-1 bg-gray-500 hover:bg-gray-600 text-white py-3 rounded-lg transition-colors">
+                    Цуцлах
+                </button>
+                <button onclick="saveNotificationSettings()" class="flex-1 bg-white text-purple-700 py-3 rounded-lg font-semibold hover:bg-white/90 transition-colors">
+                    Хадгалах
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Дэлгэрэнгүй тайлангийн модал -->
+    <div id="detailedReportsModal" class="hidden fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div class="glass-effect rounded-2xl p-6 w-full max-w-6xl max-h-[90vh] overflow-y-auto">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-2xl font-bold text-white">📈 Дэлгэрэнгүй тайлан</h2>
+                <div class="flex space-x-3">
+                    <button onclick="exportReport('excel')" class="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg transition-colors text-sm">
+                        📊 Excel татах
+                    </button>
+                    <button onclick="exportReport('pdf')" class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg transition-colors text-sm">
+                        📄 PDF татах
+                    </button>
+                    <button onclick="hideDetailedReports()" class="text-white hover:text-red-300 text-2xl">✕</button>
+                </div>
+            </div>
+            
+            <!-- Тайлангийн хэсгүүд -->
+            <div class="grid md:grid-cols-3 gap-6 mb-6">
+                <div class="bg-white/10 rounded-xl p-6">
+                    <h3 class="text-lg font-semibold text-white mb-4">📊 Ирц</h3>
+                    <div class="space-y-3">
+                        <div class="flex justify-between">
+                            <span class="text-white/70">Өнөөдөр ирсэн:</span>
+                            <span class="text-green-300 font-bold">189/247</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-white/70">Хоцорсон:</span>
+                            <span class="text-yellow-300 font-bold">23</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-white/70">Ирээгүй:</span>
+                            <span class="text-red-300 font-bold">58</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-white/70">Ирцийн хувь:</span>
+                            <span class="text-blue-300 font-bold">76.5%</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="bg-white/10 rounded-xl p-6">
+                    <h3 class="text-lg font-semibold text-white mb-4">⏰ Ажлын цаг</h3>
+                    <div class="space-y-3">
+                        <div class="flex justify-between">
+                            <span class="text-white/70">Дундаж ажлын цаг:</span>
+                            <span class="text-blue-300 font-bold">7.8 цаг</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-white/70">Илүү цаг:</span>
+                            <span class="text-purple-300 font-bold">45 ажилтан</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-white/70">Дутуу ажилласан:</span>
+                            <span class="text-orange-300 font-bold">12 ажилтан</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-white/70">Бүтээмж:</span>
+                            <span class="text-green-300 font-bold">92%</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="bg-white/10 rounded-xl p-6">
+                    <h3 class="text-lg font-semibold text-white mb-4">🏆 Шилдэг ажилтнууд</h3>
+                    <div class="space-y-3">
+                        <div class="flex items-center space-x-3">
+                            <span class="text-2xl">🥇</span>
+                            <div>
+                                <div class="text-white font-medium">Батбаяр</div>
+                                <div class="text-green-300 text-sm">100% ирц</div>
+                            </div>
+                        </div>
+                        <div class="flex items-center space-x-3">
+                            <span class="text-2xl">🥈</span>
+                            <div>
+                                <div class="text-white font-medium">Сарангэрэл</div>
+                                <div class="text-blue-300 text-sm">9.2 цаг дундаж</div>
+                            </div>
+                        </div>
+                        <div class="flex items-center space-x-3">
+                            <span class="text-2xl">🥉</span>
+                            <div>
+                                <div class="text-white font-medium">Болдбаатар</div>
+                                <div class="text-purple-300 text-sm">Удирдлага</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Графикууд -->
+            <div class="bg-white/10 rounded-xl p-6 mb-6">
+                <h3 class="text-lg font-semibold text-white mb-4">📈 7 хоногийн ирц</h3>
+                <div class="grid grid-cols-7 gap-2 h-32">
+                    <div class="flex flex-col items-center">
+                        <div class="flex-1 bg-green-500 rounded-t w-8 flex items-end" style="height: 85%;">
+                            <div class="w-full bg-green-400 rounded-t" style="height: 85%;"></div>
+                        </div>
+                        <div class="text-white/70 text-xs mt-2">Да</div>
+                        <div class="text-white text-xs">85%</div>
+                    </div>
+                    <div class="flex flex-col items-center">
+                        <div class="flex-1 bg-green-500 rounded-t w-8 flex items-end" style="height: 92%;">
+                            <div class="w-full bg-green-400 rounded-t" style="height: 92%;"></div>
+                        </div>
+                        <div class="text-white/70 text-xs mt-2">Мя</div>
+                        <div class="text-white text-xs">92%</div>
+                    </div>
+                    <div class="flex flex-col items-center">
+                        <div class="flex-1 bg-green-500 rounded-t w-8 flex items-end" style="height: 78%;">
+                            <div class="w-full bg-yellow-400 rounded-t" style="height: 78%;"></div>
+                        </div>
+                        <div class="text-white/70 text-xs mt-2">Лх</div>
+                        <div class="text-white text-xs">78%</div>
+                    </div>
+                    <div class="flex flex-col items-center">
+                        <div class="flex-1 bg-green-500 rounded-t w-8 flex items-end" style="height: 88%;">
+                            <div class="w-full bg-green-400 rounded-t" style="height: 88%;"></div>
+                        </div>
+                        <div class="text-white/70 text-xs mt-2">Пү</div>
+                        <div class="text-white text-xs">88%</div>
+                    </div>
+                    <div class="flex flex-col items-center">
+                        <div class="flex-1 bg-green-500 rounded-t w-8 flex items-end" style="height: 95%;">
+                            <div class="w-full bg-green-400 rounded-t" style="height: 95%;"></div>
+                        </div>
+                        <div class="text-white/70 text-xs mt-2">Ба</div>
+                        <div class="text-white text-xs">95%</div>
+                    </div>
+                    <div class="flex flex-col items-center">
+                        <div class="flex-1 bg-gray-500 rounded-t w-8 flex items-end" style="height: 45%;">
+                            <div class="w-full bg-gray-400 rounded-t" style="height: 45%;"></div>
+                        </div>
+                        <div class="text-white/70 text-xs mt-2">Бя</div>
+                        <div class="text-white text-xs">45%</div>
+                    </div>
+                    <div class="flex flex-col items-center">
+                        <div class="flex-1 bg-gray-500 rounded-t w-8 flex items-end" style="height: 12%;">
+                            <div class="w-full bg-gray-400 rounded-t" style="height: 12%;"></div>
+                        </div>
+                        <div class="text-white/70 text-xs mt-2">Ня</div>
+                        <div class="text-white text-xs">12%</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Талархал модал -->
+    <div id="appreciationModal" class="hidden fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div class="glass-effect rounded-2xl p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-xl font-bold text-white">🙏 Талархал илэрхийлэх</h2>
+                <button onclick="hideAppreciation()" class="text-white hover:text-red-300 text-2xl">✕</button>
+            </div>
+            
+            <div class="grid md:grid-cols-2 gap-6">
+                <!-- Талархал илгээх -->
+                <div class="bg-white/10 rounded-xl p-6">
+                    <h3 class="text-lg font-semibold text-white mb-4">✨ Талархал илгээх</h3>
+                    
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-white/90 text-sm font-medium mb-2">Хэнд</label>
+                            <select id="appreciationTo" class="w-full px-4 py-2 rounded-lg bg-white/10 border border-white/20 text-white focus:outline-none focus:ring-2 focus:ring-white/50">
+                                <option value="">Ажилтан сонгоно уу</option>
+                            </select>
+                        </div>
+                        
+                        <div>
+                            <label class="block text-white/90 text-sm font-medium mb-2">Төрөл</label>
+                            <select id="appreciationType" class="w-full px-4 py-2 rounded-lg bg-white/10 border border-white/20 text-white focus:outline-none focus:ring-2 focus:ring-white/50">
+                                <option value="thanks">🙏 Талархал</option>
+                                <option value="great_work">👏 Сайн ажил</option>
+                                <option value="helpful">🤝 Тусламж</option>
+                                <option value="creative">💡 Бүтээлч</option>
+                                <option value="teamwork">👥 Багийн ажил</option>
+                                <option value="leadership">🌟 Удирдлага</option>
+                            </select>
+                        </div>
+                        
+                        <div>
+                            <label class="block text-white/90 text-sm font-medium mb-2">Мессеж</label>
+                            <textarea id="appreciationMessage" rows="4" placeholder="Талархлын үгээ бичнэ үү..." class="w-full px-4 py-2 rounded-lg bg-white/10 border border-white/20 text-white placeholder-white/60 focus:outline-none focus:ring-2 focus:ring-white/50 resize-none"></textarea>
+                        </div>
+                        
+                        <button onclick="sendAppreciation()" class="w-full bg-yellow-500 hover:bg-yellow-600 text-white py-2 rounded-lg transition-colors">
+                            🙏 Талархал илгээх
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- Хүлээн авсан талархлууд -->
+                <div class="bg-white/10 rounded-xl p-6">
+                    <h3 class="text-lg font-semibold text-white mb-4">🎉 Хүлээн авсан талархлууд</h3>
+                    
+                    <div class="space-y-3 max-h-96 overflow-y-auto" id="receivedAppreciations">
+                        <div class="text-white/70 text-center py-8">
+                            Одоогоор талархал байхгүй байна
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Хэрэглэгчийн биометрик тохиргоо хадгалах
+        let userBiometrics = {
+            fingerprint: false,
+            face: false,
+            isFirstLogin: true
+        };
+
+        // Ажлын цагийн мэдээлэл хадгалах
+        let workSession = {
+            checkInTime: null,
+            checkOutTime: null,
+            requiredHours: 8,
+            scheduledStartTime: '09:00',
+            isWorking: false,
+            currentUser: null,
+            currentUserData: null
+        };
+
+        // Хэрэглэгчийн мэдээлэл
+        let employees = {
+            '99000000': { name: 'Админ', position: 'Системийн админ', avatar: '👨‍💼', phone: '99000000' },
+            '99123456': { name: 'Батбаяр', position: 'Програмист', avatar: '👨‍💻', phone: '99123456' },
+            '99234567': { name: 'Сарангэрэл', position: 'Дизайнер', avatar: '👩‍🎨', phone: '99234567' },
+            '99345678': { name: 'Болдбаатар', position: 'Менежер', avatar: '👨‍💼', phone: '99345678' }
+        };
+
+        // Чат мессежүүд
+        let chatMessages = [];
+        
+        // Талархалын мессежүүд
+        let appreciationMessages = [];
+
+        // Цагийн интервал
+        let workTimeInterval = null;
+
+        // Цаг харуулах
+        function updateTime() {
+            const now = new Date();
+            const timeOptions = { hour: '2-digit', minute: '2-digit', second: '2-digit' };
+            const dateOptions = { year: 'numeric', month: 'long', day: 'numeric' };
+            
+            if (document.getElementById('currentTime')) {
+                document.getElementById('currentTime').textContent = now.toLocaleTimeString('mn-MN', timeOptions);
+                document.getElementById('currentDate').textContent = now.toLocaleDateString('mn-MN', dateOptions);
+            }
+        }
+        
+        setInterval(updateTime, 1000);
+        updateTime();
+
+        // Нэвтрэх
+        document.getElementById('loginForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const phone = document.getElementById('phoneNumber').value;
+            const password = document.getElementById('password').value;
+            
+            // Жишээ нэвтрэх шалгалт
+            if (phone && password) {
+                // Анх удаа нэвтэрч байгаа эсэхийг шалгах
+                const isFirstTime = !localStorage.getItem(`biometric_${phone}`);
+                
+                if (isFirstTime) {
+                    // Анхны нэвтрэлт - биометрик тохиргоо харуулах
+                    showBiometricSetup(phone);
+                } else {
+                    // Хэвийн нэвтрэлт
+                    loginUser(phone, password);
+                }
+            }
+        });
+
+        // Биометрик тохиргоо харуулах
+        function showBiometricSetup(phone) {
+            document.getElementById('loginScreen').classList.add('hidden');
+            document.getElementById('biometricSetupScreen').classList.remove('hidden');
+            
+            // Утасны дугаарыг хадгалах
+            window.currentSetupPhone = phone;
+        }
+
+        // Хурууны хээ тохируулах
+        function setupFingerprint() {
+            showBiometricModal('fingerprint_setup');
+            
+            setTimeout(() => {
+                hideBiometricModal();
+                userBiometrics.fingerprint = true;
+                document.getElementById('fingerprintCheck').checked = true;
+                showMessage('✅ Хурууны хээ амжилттай бүртгэгдлээ!', 'bg-green-500/20');
+            }, 3000);
+        }
+
+        // Царай тохируулах
+        function setupFace() {
+            showBiometricModal('face_setup');
+            
+            setTimeout(() => {
+                hideBiometricModal();
+                userBiometrics.face = true;
+                document.getElementById('faceCheck').checked = true;
+                showMessage('✅ Царай амжилттай бүртгэгдлээ!', 'bg-green-500/20');
+            }, 2500);
+        }
+
+        // Биометрик тохиргоо алгасах
+        function skipBiometricSetup() {
+            completeBiometricSetup();
+        }
+
+        // Биометрик тохиргоо дуусгах
+        function completeBiometricSetup() {
+            const phone = window.currentSetupPhone;
+            
+            // Тохиргоог хадгалах
+            localStorage.setItem(`biometric_${phone}`, JSON.stringify(userBiometrics));
+            
+            // Үндсэн хэсэг рүү шилжих
+            document.getElementById('biometricSetupScreen').classList.add('hidden');
+            loginUser(phone, 'setup_complete');
+        }
+
+        // Хэрэглэгч нэвтрүүлэх
+        function loginUser(phone, password) {
+            document.getElementById('loginScreen').classList.add('hidden');
+            document.getElementById('biometricSetupScreen').classList.add('hidden');
+            document.getElementById('mainScreen').classList.remove('hidden');
+            
+            // Хэрэглэгчийн мэдээлэл хадгалах
+            workSession.currentUser = phone;
+            
+            // Хэрэглэгчийн мэдээлэл ачаалах эсвэл үүсгэх
+            if (!employees[phone]) {
+                employees[phone] = {
+                    name: `Хэрэглэгч ${phone}`,
+                    position: 'Ажилтан',
+                    avatar: '👤',
+                    phone: phone
+                };
+            }
+            
+            workSession.currentUserData = employees[phone];
+            
+            // Профайл мэдээлэл харуулах
+            updateUserProfile();
+            
+            // Админ товчийг нуух (бүх хэрэглэгчид)
+            document.getElementById('adminBtn').classList.add('hidden');
+            
+            // Админ эрх шалгах
+            if (phone === '99000000' || (employees[phone] && employees[phone].isAdmin)) {
+                document.getElementById('adminBtn').classList.remove('hidden');
+            }
+            
+            // Хэрэглэгчийн биометрик тохиргоог ачаалах
+            const savedBiometrics = localStorage.getItem(`biometric_${phone}`);
+            if (savedBiometrics) {
+                userBiometrics = JSON.parse(savedBiometrics);
+                updateBiometricSettingsDisplay();
+            }
+            
+            // Хэрэглэгчийн цагийн хуваарь ачаалах
+            loadUserSchedule(phone);
+            
+            // Өнөөдрийн ажлын статус ачаалах
+            loadTodayWorkStatus(phone);
+            
+            // Байршил авах
+            getLocation();
+            
+            // Чат болон талархлын жагсаалт шинэчлэх
+            updateEmployeeListsForChat();
+            loadReceivedAppreciations();
+        }
+
+        // Биометрик баталгаажуулалт - Хурууны хээ
+        function authenticateFingerprint() {
+            showBiometricModal('fingerprint');
+            
+            // Жишээ хурууны хээ таних процесс
+            setTimeout(() => {
+                const success = Math.random() > 0.3; // 70% амжилттай
+                if (success) {
+                    hideBiometricModal();
+                    loginUser('Биометрик хэрэглэгч', 'fingerprint');
+                } else {
+                    updateBiometricContent('❌ Хурууны хээ таниагдсангүй. Дахин оролдоно уу.');
+                }
+            }, 3000);
+        }
+
+        // Биометрик баталгаажуулалт - Царай таних
+        function authenticateFace() {
+            showBiometricModal('face');
+            
+            // Жишээ царай таних процесс
+            setTimeout(() => {
+                const success = Math.random() > 0.2; // 80% амжилттай
+                if (success) {
+                    hideBiometricModal();
+                    loginUser('Царай таних хэрэглэгч', 'face');
+                } else {
+                    updateBiometricContent('❌ Царай таниагдсангүй. Дахин оролдоно уу.');
+                }
+            }, 2500);
+        }
+
+        // Биометрик тохиргоо харуулах
+        function showBiometricSettings() {
+            document.getElementById('biometricSettingsModal').classList.remove('hidden');
+            updateBiometricSettingsDisplay();
+        }
+
+        // Биометрик тохиргоо нуух
+        function hideBiometricSettings() {
+            document.getElementById('biometricSettingsModal').classList.add('hidden');
+        }
+
+        // Биометрик тохиргооны дэлгэц шинэчлэх
+        function updateBiometricSettingsDisplay() {
+            const fingerprintStatus = document.getElementById('fingerprintStatus');
+            const faceStatus = document.getElementById('faceStatus');
+            const fingerprintToggle = document.getElementById('fingerprintToggle');
+            const faceToggle = document.getElementById('faceToggle');
+            
+            if (userBiometrics.fingerprint) {
+                fingerprintStatus.textContent = 'Идэвхтэй';
+                fingerprintStatus.className = 'text-green-300 text-sm';
+                fingerprintToggle.textContent = 'Идэвхгүй болгох';
+                fingerprintToggle.className = 'bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded text-sm transition-colors';
+            } else {
+                fingerprintStatus.textContent = 'Бүртгэгдээгүй';
+                fingerprintStatus.className = 'text-white/70 text-sm';
+                fingerprintToggle.textContent = 'Идэвхжүүлэх';
+                fingerprintToggle.className = 'bg-gray-500 hover:bg-gray-600 text-white px-3 py-1 rounded text-sm transition-colors';
+            }
+            
+            if (userBiometrics.face) {
+                faceStatus.textContent = 'Идэвхтэй';
+                faceStatus.className = 'text-green-300 text-sm';
+                faceToggle.textContent = 'Идэвхгүй болгох';
+                faceToggle.className = 'bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded text-sm transition-colors';
+            } else {
+                faceStatus.textContent = 'Бүртгэгдээгүй';
+                faceStatus.className = 'text-white/70 text-sm';
+                faceToggle.textContent = 'Идэвхжүүлэх';
+                faceToggle.className = 'bg-gray-500 hover:bg-gray-600 text-white px-3 py-1 rounded text-sm transition-colors';
+            }
+        }
+
+        // Хурууны хээ тохиргоо солих
+        function toggleFingerprint() {
+            if (userBiometrics.fingerprint) {
+                userBiometrics.fingerprint = false;
+                showMessage('❌ Хурууны хээ идэвхгүй болгогдлоо', 'bg-red-500/20');
+            } else {
+                showBiometricModal('fingerprint_setup');
+                setTimeout(() => {
+                    hideBiometricModal();
+                    userBiometrics.fingerprint = true;
+                    showMessage('✅ Хурууны хээ идэвхжлээ!', 'bg-green-500/20');
+                    updateBiometricSettingsDisplay();
+                }, 3000);
+            }
+            updateBiometricSettingsDisplay();
+        }
+
+        // Царай таних тохиргоо солих
+        function toggleFace() {
+            if (userBiometrics.face) {
+                userBiometrics.face = false;
+                showMessage('❌ Царай таних идэвхгүй болгогдлоо', 'bg-red-500/20');
+            } else {
+                showBiometricModal('face_setup');
+                setTimeout(() => {
+                    hideBiometricModal();
+                    userBiometrics.face = true;
+                    showMessage('✅ Царай таних идэвхжлээ!', 'bg-green-500/20');
+                    updateBiometricSettingsDisplay();
+                }, 2500);
+            }
+            updateBiometricSettingsDisplay();
+        }
+
+        // Байршил авах
+        function getLocation() {
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(
+                    function(position) {
+                        const lat = position.coords.latitude;
+                        const lng = position.coords.longitude;
+                        console.log(`Байршил: ${lat}, ${lng}`);
+                        
+                        // Байршил шалгах (жишээ координат)
+                        const officeDistance = calculateDistance(lat, lng, 47.9184, 106.9177); // УБ төв
+                        
+                        if (officeDistance < 0.5) { // 500м дотор
+                            showLocationStatus('✅ Оффисын бүсэд байна', 'bg-green-500/20');
+                        } else {
+                            showLocationStatus('⚠️ Оффисын бүсээс хол байна', 'bg-yellow-500/20');
+                        }
+                    },
+                    function(error) {
+                        showLocationStatus('❌ Байршил авах боломжгүй', 'bg-red-500/20');
+                    }
+                );
+            }
+        }
+
+        // Байршлын зай тооцоолох
+        function calculateDistance(lat1, lng1, lat2, lng2) {
+            const R = 6371; // Дэлхийн радиус км-ээр
+            const dLat = (lat2 - lat1) * Math.PI / 180;
+            const dLng = (lng2 - lng1) * Math.PI / 180;
+            const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+                    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+                    Math.sin(dLng/2) * Math.sin(dLng/2);
+            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+            return R * c;
+        }
+
+        // Байршлын статус харуулах
+        function showLocationStatus(message, bgClass) {
+            const statusDiv = document.getElementById('locationStatus');
+            statusDiv.innerHTML = `<div class="text-lg">${message}</div>`;
+            statusDiv.className = `mt-4 p-4 rounded-lg text-center text-white ${bgClass}`;
+            statusDiv.classList.remove('hidden');
+        }
+
+        // Ажилд ирэх
+        function checkIn() {
+            const now = new Date();
+            const timeString = now.toLocaleTimeString('mn-MN', { hour: '2-digit', minute: '2-digit' });
+            
+            // Ажлын сессийн мэдээлэл хадгалах
+            workSession.checkInTime = now;
+            workSession.isWorking = true;
+            
+            // Хоцорсон эсэхийг шалгах
+            const scheduledTime = parseTime(workSession.scheduledStartTime);
+            const actualTime = now;
+            const isLate = actualTime > scheduledTime;
+            
+            // Бүртгэл нэмэх
+            const recordsDiv = document.getElementById('todayRecords');
+            const newRecord = document.createElement('div');
+            newRecord.className = 'bg-white/10 rounded-lg p-4 flex justify-between items-center slide-in';
+            newRecord.innerHTML = `
+                <div>
+                    <div class="text-white font-medium">Ажилд ирэх ${isLate ? '⚠️' : '✅'}</div>
+                    <div class="text-white/70 text-sm">Байршил: Төв оффис</div>
+                    ${isLate ? '<div class="text-yellow-300 text-xs">Хоцорсон</div>' : ''}
+                </div>
+                <div class="text-green-300 font-bold">${timeString}</div>
+            `;
+            recordsDiv.appendChild(newRecord);
+            
+            // Товчны төлөв өөрчлөх
+            document.getElementById('checkInBtn').disabled = true;
+            document.getElementById('checkOutBtn').disabled = false;
+            
+            // Ажлын цагийн тооцоолол эхлүүлэх
+            startWorkTimeTracking();
+            
+            // Статус харуулах
+            const message = isLate ? '⚠️ Ажилд ирлээ (хоцорсон)' : '✅ Амжилттай ажилд ирлээ!';
+            const bgClass = isLate ? 'bg-yellow-500/20' : 'bg-green-500/20';
+            showMessage(message, bgClass);
+            
+            // Өнөөдрийн ажлын мэдээлэл хадгалах
+            saveTodayWorkData();
+            
+            // Статистик шинэчлэх
+            const checkedIn = document.getElementById('checkedIn');
+            const absent = document.getElementById('absent');
+            checkedIn.textContent = parseInt(checkedIn.textContent) + 1;
+            absent.textContent = parseInt(absent.textContent) - 1;
+        }
+
+        // Ажлаас гарах
+        function checkOut() {
+            const now = new Date();
+            const timeString = now.toLocaleTimeString('mn-MN', { hour: '2-digit', minute: '2-digit' });
+            
+            // Ажлын сессийн мэдээлэл шинэчлэх
+            workSession.checkOutTime = now;
+            workSession.isWorking = false;
+            
+            // Ажилласан цагийг тооцоолох
+            const workedMinutes = Math.floor((now - workSession.checkInTime) / (1000 * 60));
+            const workedHours = Math.floor(workedMinutes / 60);
+            const remainingMinutes = workedMinutes % 60;
+            const workedTimeString = `${workedHours}:${remainingMinutes.toString().padStart(2, '0')}`;
+            
+            // Статус тодорхойлох
+            const requiredMinutes = workSession.requiredHours * 60;
+            let status, statusClass, statusIcon;
+            
+            if (workedMinutes >= requiredMinutes) {
+                status = 'Бүрэн ажилласан';
+                statusClass = 'text-green-300';
+                statusIcon = '✅';
+            } else if (workedMinutes >= requiredMinutes * 0.5) {
+                status = 'Тал ажилласан';
+                statusClass = 'text-yellow-300';
+                statusIcon = '⚠️';
+            } else {
+                status = 'Тал ажилласан';
+                statusClass = 'text-red-300';
+                statusIcon = '❌';
+            }
+            
+            // Бүртгэл нэмэх
+            const recordsDiv = document.getElementById('todayRecords');
+            const newRecord = document.createElement('div');
+            newRecord.className = 'bg-white/10 rounded-lg p-4 flex justify-between items-center slide-in';
+            newRecord.innerHTML = `
+                <div>
+                    <div class="text-white font-medium">Ажлаас гарах ${statusIcon}</div>
+                    <div class="text-white/70 text-sm">Байршил: Төв оффис</div>
+                    <div class="${statusClass} text-xs">${status} (${workedTimeString})</div>
+                </div>
+                <div class="text-red-300 font-bold">${timeString}</div>
+            `;
+            recordsDiv.appendChild(newRecord);
+            
+            // Товчны төлөв өөрчлөх
+            document.getElementById('checkInBtn').disabled = false;
+            document.getElementById('checkOutBtn').disabled = true;
+            
+            // Ажлын цагийн тооцоолол зогсоох
+            stopWorkTimeTracking();
+            
+            // Статус харуулах
+            showMessage(`${statusIcon} Ажлаас гарлаа! ${status} (${workedTimeString})`, 'bg-blue-500/20');
+            
+            // Өнөөдрийн ажлын мэдээлэл хадгалах
+            saveTodayWorkData();
+        }
+
+        // Мессеж харуулах
+        function showMessage(message, bgClass) {
+            const messageDiv = document.getElementById('statusMessage');
+            messageDiv.textContent = message;
+            messageDiv.className = `mt-4 p-4 rounded-lg text-center text-white ${bgClass}`;
+            messageDiv.classList.remove('hidden');
+            
+            setTimeout(() => {
+                messageDiv.classList.add('hidden');
+            }, 3000);
+        }
+
+        // Гарах
+        function logout() {
+            document.getElementById('mainScreen').classList.add('hidden');
+            document.getElementById('loginScreen').classList.remove('hidden');
+            document.getElementById('phoneNumber').value = '';
+            document.getElementById('password').value = '';
+            
+            // Товчны төлөв reset хийх
+            document.getElementById('checkInBtn').disabled = false;
+            document.getElementById('checkOutBtn').disabled = true;
+        }
+
+        // Жишээ өгөгдөл шинэчлэх
+        function updateStats() {
+            const stats = [
+                { total: 247, checkedIn: 189, absent: 58 },
+                { total: 251, checkedIn: 195, absent: 56 },
+                { total: 245, checkedIn: 182, absent: 63 }
+            ];
+            
+            const randomStat = stats[Math.floor(Math.random() * stats.length)];
+            document.getElementById('totalEmployees').textContent = randomStat.total;
+            document.getElementById('checkedIn').textContent = randomStat.checkedIn;
+            document.getElementById('absent').textContent = randomStat.absent;
+        }
+
+        // 30 секунд тутамд статистик шинэчлэх
+        setInterval(updateStats, 30000);
+
+        // Админ панел харуулах
+        function showAdminPanel() {
+            document.getElementById('adminPanel').classList.remove('hidden');
+        }
+
+        // Админ панел нуух
+        function hideAdminPanel() {
+            document.getElementById('adminPanel').classList.add('hidden');
+        }
+
+        // Биометрик модал харуулах
+        function showBiometricModal(type) {
+            const modal = document.getElementById('biometricModal');
+            const content = document.getElementById('biometricContent');
+            
+            if (type === 'fingerprint' || type === 'fingerprint_setup') {
+                content.innerHTML = `
+                    <div class="text-6xl mb-4 pulse-animation">👆</div>
+                    <h3 class="text-xl font-bold text-white mb-2">Хурууны хээ таних</h3>
+                    <p class="text-white/70 mb-4">Хурууны хээ уншигч дээр хуруугаа тавина уу</p>
+                    <div class="w-16 h-16 border-4 border-white/30 border-t-white rounded-full animate-spin mx-auto"></div>
+                `;
+            } else if (type === 'face' || type === 'face_setup') {
+                content.innerHTML = `
+                    <div class="text-6xl mb-4 pulse-animation">👤</div>
+                    <h3 class="text-xl font-bold text-white mb-2">Царай таних</h3>
+                    <p class="text-white/70 mb-4">Камер руу харж, царайгаа харуулна уу</p>
+                    <div class="w-16 h-16 border-4 border-white/30 border-t-white rounded-full animate-spin mx-auto"></div>
+                `;
+            }
+            
+            modal.classList.remove('hidden');
+        }
+
+        // Биометрик модал нуух
+        function hideBiometricModal() {
+            document.getElementById('biometricModal').classList.add('hidden');
+        }
+
+        // Биометрик контент шинэчлэх
+        function updateBiometricContent(message) {
+            document.getElementById('biometricContent').innerHTML = `
+                <div class="text-4xl mb-4">❌</div>
+                <p class="text-white">${message}</p>
+            `;
+        }
+
+        // Ажилтан нэмэх хуваарийн загвар тохируулах
+        function setEmployeeScheduleTemplate(template) {
+            let startTime, endTime;
+            
+            switch(template) {
+                case 'standard':
+                    startTime = '09:00';
+                    endTime = '18:00';
+                    break;
+                case 'flexible':
+                    startTime = '10:00';
+                    endTime = '19:00';
+                    break;
+                case 'early':
+                    startTime = '08:00';
+                    endTime = '17:00';
+                    break;
+            }
+            
+            document.getElementById('empStartTime').value = startTime;
+            document.getElementById('empEndTime').value = endTime;
+            
+            // Ажлын өдрүүд (Даваа-Баасан идэвхтэй)
+            document.getElementById('empMon').checked = true;
+            document.getElementById('empTue').checked = true;
+            document.getElementById('empWed').checked = true;
+            document.getElementById('empThu').checked = true;
+            document.getElementById('empFri').checked = true;
+            document.getElementById('empSat').checked = false;
+            document.getElementById('empSun').checked = false;
+        }
+
+        // Ажилтан нэмэх
+        document.getElementById('addEmployeeForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const name = document.getElementById('empName').value;
+            const phone = document.getElementById('empPhone').value;
+            const position = document.getElementById('empPosition').value;
+            const password = document.getElementById('empPassword').value;
+            const isAdmin = document.getElementById('empIsAdmin').checked;
+            
+            // Цагийн хуваарийн мэдээлэл авах
+            const startTime = document.getElementById('empStartTime').value;
+            const endTime = document.getElementById('empEndTime').value;
+            const workDays = {
+                mon: document.getElementById('empMon').checked,
+                tue: document.getElementById('empTue').checked,
+                wed: document.getElementById('empWed').checked,
+                thu: document.getElementById('empThu').checked,
+                fri: document.getElementById('empFri').checked,
+                sat: document.getElementById('empSat').checked,
+                sun: document.getElementById('empSun').checked
+            };
+            
+            // Ажилтан нэмэх
+            addEmployeeToList(name, phone, position, startTime, endTime, workDays, isAdmin);
+            
+            // Ажилтныг employees объектод нэмэх
+            employees[phone] = {
+                name: name,
+                position: position,
+                avatar: isAdmin ? '👨‍💼' : '👤',
+                phone: phone,
+                isAdmin: isAdmin
+            };
+            
+            // Локал хадгалах
+            localStorage.setItem('employees', JSON.stringify(employees));
+            
+            // Форм цэвэрлэх
+            this.reset();
+            
+            // Стандарт утгууд буцаах
+            document.getElementById('empStartTime').value = '09:00';
+            document.getElementById('empEndTime').value = '18:00';
+            document.getElementById('empMon').checked = true;
+            document.getElementById('empTue').checked = true;
+            document.getElementById('empWed').checked = true;
+            document.getElementById('empThu').checked = true;
+            document.getElementById('empFri').checked = true;
+            document.getElementById('empSat').checked = false;
+            document.getElementById('empSun').checked = false;
+            document.getElementById('empIsAdmin').checked = false;
+            
+            // Амжилтын мессеж
+            const adminText = isAdmin ? ' (Админ эрхтэй)' : '';
+            alert(`✅ ${name} амжилттай нэмэгдлээ!${adminText} Цагийн хуваарь: ${startTime}-${endTime}`);
+        });
+
+        // Ажилтан жагсаалтад нэмэх
+        function addEmployeeToList(name, phone, position, startTime = '09:00', endTime = '18:00', workDays = null, isAdmin = false) {
+            const employeeList = document.getElementById('employeeList');
+            const newEmployee = document.createElement('div');
+            newEmployee.className = 'bg-white/10 rounded-lg p-3 slide-in';
+            
+            // Ажлын өдрүүдийн тоо тооцоолох
+            let workDaysCount = 5; // Стандарт
+            if (workDays) {
+                workDaysCount = Object.values(workDays).filter(day => day).length;
+            }
+            
+            newEmployee.innerHTML = `
+                <div class="flex justify-between items-start mb-2">
+                    <div>
+                        <div class="text-white font-medium">${name} ${isAdmin ? '👨‍💼' : ''}</div>
+                        <div class="text-white/70 text-sm">${phone} • ${position}${isAdmin ? ' • Админ' : ''}</div>
+                        <div class="text-gray-300 text-xs">Биометрик бүртгэл хийгдээгүй</div>
+                    </div>
+                    <div class="flex space-x-2">
+                        <button onclick="editSchedule('${phone}', '${name}')" class="text-blue-400 hover:text-blue-300">⏰</button>
+                        <button onclick="removeEmployee('${phone}')" class="text-red-400 hover:text-red-300">🗑️</button>
+                    </div>
+                </div>
+                <div class="flex justify-between items-center text-xs">
+                    <span class="text-gray-300">Ажил эхлээгүй</span>
+                    <span class="text-white/70">${startTime}-${endTime} (${workDaysCount} өдөр)</span>
+                </div>
+            `;
+            employeeList.appendChild(newEmployee);
+            
+            // Цагийн хуваарь хадгалах
+            const schedule = {
+                mon: { active: workDays?.mon ?? true, start: startTime, end: endTime },
+                tue: { active: workDays?.tue ?? true, start: startTime, end: endTime },
+                wed: { active: workDays?.wed ?? true, start: startTime, end: endTime },
+                thu: { active: workDays?.thu ?? true, start: startTime, end: endTime },
+                fri: { active: workDays?.fri ?? true, start: startTime, end: endTime },
+                sat: { active: workDays?.sat ?? false, start: startTime, end: endTime },
+                sun: { active: workDays?.sun ?? false, start: startTime, end: endTime }
+            };
+            
+            localStorage.setItem(`schedule_${phone}`, JSON.stringify(schedule));
+        }
+
+        // Ажилтан хасах
+        function removeEmployee(phone) {
+            if (confirm('Энэ ажилтныг устгахдаа итгэлтэй байна уу?')) {
+                // DOM-оос хасах логик энд байх
+                alert(`Ажилтан ${phone} устгагдлаа`);
+            }
+        }
+
+        // Цагийн хуваарь засах
+        let currentEditingEmployee = null;
+        
+        function editSchedule(phone, name) {
+            currentEditingEmployee = { phone, name };
+            document.getElementById('scheduleModalTitle').textContent = `⏰ ${name}-ын цагийн хуваарь`;
+            
+            // Хадгалагдсан хуваарийг ачаалах
+            const savedSchedule = localStorage.getItem(`schedule_${phone}`);
+            if (savedSchedule) {
+                const schedule = JSON.parse(savedSchedule);
+                loadScheduleToForm(schedule);
+            }
+            
+            document.getElementById('scheduleModal').classList.remove('hidden');
+        }
+
+        // Цагийн хуваарийн модал нуух
+        function hideScheduleModal() {
+            document.getElementById('scheduleModal').classList.add('hidden');
+            currentEditingEmployee = null;
+        }
+
+        // Хуваарийг формд ачаалах
+        function loadScheduleToForm(schedule) {
+            const days = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'];
+            
+            days.forEach(day => {
+                if (schedule[day]) {
+                    document.getElementById(`${day}_active`).checked = schedule[day].active;
+                    document.getElementById(`${day}_start`).value = schedule[day].start;
+                    document.getElementById(`${day}_end`).value = schedule[day].end;
+                }
+            });
+        }
+
+        // Хуваарийн загвар хэрэглэх
+        function applyScheduleTemplate(template) {
+            const days = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'];
+            
+            let startTime, endTime, weekdaysOnly = true;
+            
+            switch(template) {
+                case 'standard':
+                    startTime = '09:00';
+                    endTime = '18:00';
+                    break;
+                case 'flexible':
+                    startTime = '10:00';
+                    endTime = '19:00';
+                    break;
+                case 'early':
+                    startTime = '08:00';
+                    endTime = '17:00';
+                    break;
+            }
+            
+            days.forEach((day, index) => {
+                const isWeekend = index >= 5; // Бямба, Ням
+                
+                document.getElementById(`${day}_active`).checked = weekdaysOnly ? !isWeekend : true;
+                document.getElementById(`${day}_start`).value = startTime;
+                document.getElementById(`${day}_end`).value = endTime;
+            });
+        }
+
+        // Хуваарь хадгалах
+        function saveSchedule() {
+            if (!currentEditingEmployee) return;
+            
+            const days = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'];
+            const schedule = {};
+            
+            days.forEach(day => {
+                schedule[day] = {
+                    active: document.getElementById(`${day}_active`).checked,
+                    start: document.getElementById(`${day}_start`).value,
+                    end: document.getElementById(`${day}_end`).value
+                };
+            });
+            
+            // Хуваарийг хадгалах
+            localStorage.setItem(`schedule_${currentEditingEmployee.phone}`, JSON.stringify(schedule));
+            
+            // Амжилтын мессеж
+            showMessage(`✅ ${currentEditingEmployee.name}-ын хуваарь хадгалагдлаа!`, 'bg-green-500/20');
+            
+            hideScheduleModal();
+        }
+
+        // Бүх ажилтны хуваарь харуулах
+        function showBulkSchedule() {
+            document.getElementById('bulkScheduleModal').classList.remove('hidden');
+        }
+
+        // Бүх ажилтны хуваарийн модал нуух
+        function hideBulkSchedule() {
+            document.getElementById('bulkScheduleModal').classList.add('hidden');
+        }
+
+        // Цаг парс хийх функц
+        function parseTime(timeString) {
+            const today = new Date();
+            const [hours, minutes] = timeString.split(':').map(Number);
+            return new Date(today.getFullYear(), today.getMonth(), today.getDate(), hours, minutes);
+        }
+
+        // Ажлын цагийн тооцоолол эхлүүлэх
+        function startWorkTimeTracking() {
+            if (workTimeInterval) {
+                clearInterval(workTimeInterval);
+            }
+            
+            workTimeInterval = setInterval(updateWorkStatus, 1000);
+            updateWorkStatus();
+        }
+
+        // Ажлын цагийн тооцоолол зогсоох
+        function stopWorkTimeTracking() {
+            if (workTimeInterval) {
+                clearInterval(workTimeInterval);
+                workTimeInterval = null;
+            }
+        }
+
+        // Ажлын статус шинэчлэх
+        function updateWorkStatus() {
+            if (!workSession.isWorking || !workSession.checkInTime) return;
+            
+            const now = new Date();
+            const workedMinutes = Math.floor((now - workSession.checkInTime) / (1000 * 60));
+            const workedHours = Math.floor(workedMinutes / 60);
+            const remainingMinutes = workedMinutes % 60;
+            const workedTimeString = `${workedHours}:${remainingMinutes.toString().padStart(2, '0')}`;
+            
+            // Ажилласан цаг харуулах
+            document.getElementById('workedHours').textContent = workedTimeString;
+            
+            // Статус тодорхойлох
+            const requiredMinutes = workSession.requiredHours * 60;
+            const statusIcon = document.getElementById('statusIcon');
+            const statusText = document.getElementById('workStatusText');
+            
+            if (workedMinutes >= requiredMinutes) {
+                statusIcon.textContent = '✅';
+                statusText.textContent = 'Бүрэн ажилласан';
+                statusText.className = 'text-lg font-bold text-green-300';
+            } else if (workedMinutes >= requiredMinutes * 0.75) {
+                statusIcon.textContent = '🟡';
+                statusText.textContent = 'Бараг дууслаа';
+                statusText.className = 'text-lg font-bold text-yellow-300';
+            } else {
+                statusIcon.textContent = '⏳';
+                statusText.textContent = 'Ажиллаж байна';
+                statusText.className = 'text-lg font-bold text-blue-300';
+            }
+        }
+
+        // Хэрэглэгчийн цагийн хуваарь ачаалах
+        function loadUserSchedule(phone) {
+            const savedSchedule = localStorage.getItem(`schedule_${phone}`);
+            if (savedSchedule) {
+                const schedule = JSON.parse(savedSchedule);
+                const today = new Date().getDay(); // 0=Ням, 1=Даваа, ...
+                const dayNames = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
+                const todaySchedule = schedule[dayNames[today]];
+                
+                if (todaySchedule && todaySchedule.active) {
+                    workSession.scheduledStartTime = todaySchedule.start;
+                    const startTime = parseTime(todaySchedule.start);
+                    const endTime = parseTime(todaySchedule.end);
+                    const scheduledHours = (endTime - startTime) / (1000 * 60 * 60);
+                    workSession.requiredHours = Math.max(8, scheduledHours); // Хамгийн багадаа 8 цаг
+                    
+                    document.getElementById('requiredHours').textContent = `${workSession.requiredHours}:00`;
+                }
+            }
+        }
+
+        // Өнөөдрийн ажлын статус ачаалах
+        function loadTodayWorkStatus(phone) {
+            const today = new Date().toDateString();
+            const savedWorkData = localStorage.getItem(`work_${phone}_${today}`);
+            
+            if (savedWorkData) {
+                const workData = JSON.parse(savedWorkData);
+                if (workData.checkInTime && !workData.checkOutTime) {
+                    // Ажил үргэлжилж байна
+                    workSession.checkInTime = new Date(workData.checkInTime);
+                    workSession.isWorking = true;
+                    
+                    document.getElementById('checkInBtn').disabled = true;
+                    document.getElementById('checkOutBtn').disabled = false;
+                    
+                    startWorkTimeTracking();
+                }
+            }
+        }
+
+        // Өнөөдрийн ажлын мэдээлэл хадгалах
+        function saveTodayWorkData() {
+            if (!workSession.currentUser) return;
+            
+            const today = new Date().toDateString();
+            const workData = {
+                checkInTime: workSession.checkInTime,
+                checkOutTime: workSession.checkOutTime,
+                requiredHours: workSession.requiredHours,
+                scheduledStartTime: workSession.scheduledStartTime
+            };
+            
+            localStorage.setItem(`work_${workSession.currentUser}_${today}`, JSON.stringify(workData));
+        }
+
+        // Хэрэглэгчийн профайл мэдээлэл шинэчлэх
+        function updateUserProfile() {
+            const userData = workSession.currentUserData;
+            if (userData) {
+                document.getElementById('userAvatar').textContent = userData.avatar;
+                document.getElementById('userName').textContent = userData.name;
+                document.getElementById('userPosition').textContent = userData.position;
+                document.getElementById('userPhone').textContent = userData.phone;
+            }
+        }
+
+        // Профайл харуулах
+        function showProfile() {
+            const userData = workSession.currentUserData;
+            if (userData) {
+                document.getElementById('profileAvatar').textContent = userData.avatar;
+                document.getElementById('profileName').textContent = userData.name;
+                document.getElementById('profilePosition').textContent = userData.position;
+                document.getElementById('profilePhone').textContent = userData.phone;
+                document.getElementById('editName').value = userData.name;
+                document.getElementById('editPosition').value = userData.position;
+            }
+            document.getElementById('profileModal').classList.remove('hidden');
+        }
+
+        // Профайл нуух
+        function hideProfile() {
+            document.getElementById('profileModal').classList.add('hidden');
+        }
+
+        // Профайл хадгалах
+        function saveProfile() {
+            const newName = document.getElementById('editName').value;
+            const newPosition = document.getElementById('editPosition').value;
+            
+            if (newName && newPosition) {
+                workSession.currentUserData.name = newName;
+                workSession.currentUserData.position = newPosition;
+                employees[workSession.currentUser] = workSession.currentUserData;
+                
+                // Профайл мэдээлэл шинэчлэх
+                updateUserProfile();
+                
+                // Локал хадгалах
+                localStorage.setItem('employees', JSON.stringify(employees));
+                
+                showMessage('✅ Профайл амжилттай шинэчлэгдлээ!', 'bg-green-500/20');
+                hideProfile();
+            }
+        }
+
+        // Аватар сонгогч харуулах
+        function showAvatarSelector() {
+            document.getElementById('avatarModal').classList.remove('hidden');
+        }
+
+        // Аватар сонгогч нуух
+        function hideAvatarSelector() {
+            document.getElementById('avatarModal').classList.add('hidden');
+        }
+
+        // Аватар сонгох
+        function selectAvatar(avatar) {
+            workSession.currentUserData.avatar = avatar;
+            employees[workSession.currentUser] = workSession.currentUserData;
+            
+            // Профайл мэдээлэл шинэчлэх
+            updateUserProfile();
+            document.getElementById('profileAvatar').textContent = avatar;
+            
+            // Локал хадгалах
+            localStorage.setItem('employees', JSON.stringify(employees));
+            
+            hideAvatarSelector();
+            showMessage('✅ Аватар солигдлоо!', 'bg-green-500/20');
+        }
+
+        // Чат харуулах
+        function showChat() {
+            document.getElementById('chatModal').classList.remove('hidden');
+            updateEmployeeListsForChat();
+        }
+
+        // Чат нуух
+        function hideChat() {
+            document.getElementById('chatModal').classList.add('hidden');
+        }
+
+        // Чатын ажилтны жагсаалт шинэчлэх
+        function updateEmployeeListsForChat() {
+            const employeeListChat = document.getElementById('employeeListChat');
+            const appreciationTo = document.getElementById('appreciationTo');
+            
+            employeeListChat.innerHTML = '';
+            appreciationTo.innerHTML = '<option value="">Ажилтан сонгоно уу</option>';
+            
+            Object.keys(employees).forEach(phone => {
+                if (phone !== workSession.currentUser) {
+                    const emp = employees[phone];
+                    
+                    // Чатын жагсаалт
+                    const chatItem = document.createElement('div');
+                    chatItem.className = 'bg-white/10 rounded-lg p-3 cursor-pointer hover:bg-white/20 transition-colors';
+                    chatItem.onclick = () => selectChatUser(phone);
+                    chatItem.innerHTML = `
+                        <div class="flex items-center space-x-3">
+                            <div class="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center">
+                                <span class="text-lg">${emp.avatar}</span>
+                            </div>
+                            <div>
+                                <div class="text-white font-medium">${emp.name}</div>
+                                <div class="text-white/70 text-sm">${emp.position}</div>
+                            </div>
+                        </div>
+                    `;
+                    employeeListChat.appendChild(chatItem);
+                    
+                    // Талархлын жагсаалт
+                    const option = document.createElement('option');
+                    option.value = phone;
+                    option.textContent = `${emp.name} (${emp.position})`;
+                    appreciationTo.appendChild(option);
+                }
+            });
+        }
+
+        // Чат хэрэглэгч сонгох
+        let selectedChatUser = null;
+        
+        function selectChatUser(phone) {
+            selectedChatUser = phone;
+            const emp = employees[phone];
+            
+            document.getElementById('chatHeader').classList.remove('hidden');
+            document.getElementById('chatWithName').textContent = `${emp.name} (${emp.position})`;
+            document.getElementById('chatInput').disabled = false;
+            document.getElementById('sendBtn').disabled = false;
+            
+            // Чат түүх ачаалах
+            loadChatHistory(phone);
+        }
+
+        // Чат түүх ачаалах
+        function loadChatHistory(phone) {
+            // Хоёр хэрэглэгчийн хооронд нэг чат түүх ашиглах
+            const user1 = workSession.currentUser;
+            const user2 = phone;
+            const chatKey = user1 < user2 ? `chat_${user1}_${user2}` : `chat_${user2}_${user1}`;
+            
+            const chatMessagesDiv = document.getElementById('chatMessages');
+            chatMessagesDiv.innerHTML = '';
+            
+            const savedChat = localStorage.getItem(chatKey);
+            if (savedChat) {
+                const messages = JSON.parse(savedChat);
+                
+                messages.forEach(msg => {
+                    const isFromCurrentUser = msg.from === workSession.currentUser;
+                    addChatMessage(msg.from, msg.message, msg.timestamp, isFromCurrentUser);
+                });
+            } else {
+                chatMessagesDiv.innerHTML = '<div class="text-white/70 text-center">Чат эхлүүлнэ үү</div>';
+            }
+        }
+
+        // Чат мессеж нэмэх
+        function addChatMessage(from, message, timestamp, fromSelf = false) {
+            const chatMessagesDiv = document.getElementById('chatMessages');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `mb-3 ${fromSelf ? 'text-right' : 'text-left'}`;
+            
+            const time = new Date(timestamp).toLocaleTimeString('mn-MN', { hour: '2-digit', minute: '2-digit' });
+            
+            messageDiv.innerHTML = `
+                <div class="inline-block max-w-xs ${fromSelf ? 'bg-blue-500' : 'bg-white/20'} rounded-lg p-3">
+                    <div class="text-white text-sm">${message}</div>
+                    <div class="text-white/70 text-xs mt-1">${time}</div>
+                </div>
+            `;
+            
+            chatMessagesDiv.appendChild(messageDiv);
+            chatMessagesDiv.scrollTop = chatMessagesDiv.scrollHeight;
+        }
+
+        // Мессеж илгээх
+        function sendMessage() {
+            const input = document.getElementById('chatInput');
+            const message = input.value.trim();
+            
+            if (message && selectedChatUser) {
+                const timestamp = new Date().toISOString();
+                
+                // Мессеж харуулах
+                addChatMessage(workSession.currentUser, message, timestamp, true);
+                
+                // Мессеж хадгалах
+                saveChatMessage(selectedChatUser, message, timestamp);
+                
+                input.value = '';
+                
+                // Жишээ хариу (бодит системд энэ байхгүй)
+                setTimeout(() => {
+                    const replies = [
+                        'Сайн байна уу!',
+                        'Тусламж хэрэгтэй юу?',
+                        'Баярлалаа!',
+                        'Ойлголоо',
+                        'Тийм ээ'
+                    ];
+                    const randomReply = replies[Math.floor(Math.random() * replies.length)];
+                    addChatMessage(selectedChatUser, randomReply, new Date().toISOString(), false);
+                    saveChatMessage(selectedChatUser, randomReply, new Date().toISOString(), false);
+                }, 1000 + Math.random() * 2000);
+            }
+        }
+
+        // Чат мессеж хадгалах
+        function saveChatMessage(otherUser, message, timestamp, fromSelf = true) {
+            const sender = fromSelf ? workSession.currentUser : otherUser;
+            
+            // Хоёр хэрэглэгчийн хооронд нэг чат түүх ашиглах
+            const user1 = workSession.currentUser;
+            const user2 = otherUser;
+            const chatKey = user1 < user2 ? `chat_${user1}_${user2}` : `chat_${user2}_${user1}`;
+            
+            let messages = [];
+            const savedChat = localStorage.getItem(chatKey);
+            if (savedChat) {
+                messages = JSON.parse(savedChat);
+            }
+            
+            messages.push({
+                from: sender,
+                message: message,
+                timestamp: timestamp
+            });
+            
+            localStorage.setItem(chatKey, JSON.stringify(messages));
+        }
+
+        // Enter товчоор мессеж илгээх
+        document.addEventListener('DOMContentLoaded', function() {
+            const chatInput = document.getElementById('chatInput');
+            if (chatInput) {
+                chatInput.addEventListener('keypress', function(e) {
+                    if (e.key === 'Enter') {
+                        sendMessage();
+                    }
+                });
+            }
+        });
+
+        // Талархал харуулах
+        function showAppreciation() {
+            document.getElementById('appreciationModal').classList.remove('hidden');
+            updateEmployeeListsForChat();
+            loadReceivedAppreciations();
+        }
+
+        // Талархал нуух
+        function hideAppreciation() {
+            document.getElementById('appreciationModal').classList.add('hidden');
+        }
+
+        // Талархал илгээх
+        function sendAppreciation() {
+            const to = document.getElementById('appreciationTo').value;
+            const type = document.getElementById('appreciationType').value;
+            const message = document.getElementById('appreciationMessage').value.trim();
+            
+            if (to && message) {
+                const appreciation = {
+                    from: workSession.currentUser,
+                    fromName: workSession.currentUserData.name,
+                    fromAvatar: workSession.currentUserData.avatar,
+                    to: to,
+                    type: type,
+                    message: message,
+                    timestamp: new Date().toISOString()
+                };
+                
+                // Талархал хадгалах
+                let appreciations = [];
+                const savedAppreciations = localStorage.getItem(`appreciations_${to}`);
+                if (savedAppreciations) {
+                    appreciations = JSON.parse(savedAppreciations);
+                }
+                
+                appreciations.push(appreciation);
+                localStorage.setItem(`appreciations_${to}`, JSON.stringify(appreciations));
+                
+                // Форм цэвэрлэх
+                document.getElementById('appreciationTo').value = '';
+                document.getElementById('appreciationMessage').value = '';
+                
+                showMessage('🙏 Талархал амжилттай илгээгдлээ!', 'bg-yellow-500/20');
+            }
+        }
+
+        // Хүлээн авсан талархлууд ачаалах
+        function loadReceivedAppreciations() {
+            const appreciationsDiv = document.getElementById('receivedAppreciations');
+            const savedAppreciations = localStorage.getItem(`appreciations_${workSession.currentUser}`);
+            
+            appreciationsDiv.innerHTML = '';
+            
+            if (savedAppreciations) {
+                const appreciations = JSON.parse(savedAppreciations);
+                
+                if (appreciations.length > 0) {
+                    appreciations.reverse().forEach(app => {
+                        const appDiv = document.createElement('div');
+                        appDiv.className = 'bg-white/10 rounded-lg p-4 slide-in';
+                        
+                        const typeIcons = {
+                            'thanks': '🙏',
+                            'great_work': '👏',
+                            'helpful': '🤝',
+                            'creative': '💡',
+                            'teamwork': '👥',
+                            'leadership': '🌟'
+                        };
+                        
+                        const typeNames = {
+                            'thanks': 'Талархал',
+                            'great_work': 'Сайн ажил',
+                            'helpful': 'Тусламж',
+                            'creative': 'Бүтээлч',
+                            'teamwork': 'Багийн ажил',
+                            'leadership': 'Удирдлага'
+                        };
+                        
+                        const time = new Date(app.timestamp).toLocaleDateString('mn-MN');
+                        
+                        appDiv.innerHTML = `
+                            <div class="flex items-start space-x-3">
+                                <div class="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center">
+                                    <span class="text-lg">${app.fromAvatar}</span>
+                                </div>
+                                <div class="flex-1">
+                                    <div class="flex items-center space-x-2 mb-2">
+                                        <span class="text-xl">${typeIcons[app.type]}</span>
+                                        <span class="text-white font-medium">${typeNames[app.type]}</span>
+                                        <span class="text-white/70 text-sm">• ${time}</span>
+                                    </div>
+                                    <div class="text-white/90 text-sm mb-2">${app.message}</div>
+                                    <div class="text-white/70 text-xs">- ${app.fromName}</div>
+                                </div>
+                            </div>
+                        `;
+                        
+                        appreciationsDiv.appendChild(appDiv);
+                    });
+                } else {
+                    appreciationsDiv.innerHTML = '<div class="text-white/70 text-center py-8">Одоогоор талархал байхгүй байна</div>';
+                }
+            } else {
+                appreciationsDiv.innerHTML = '<div class="text-white/70 text-center py-8">Одоогоор талархал байхгүй байна</div>';
+            }
+        }
+
+        // Хадгалагдсан ажилтнуудыг ачаалах
+        function loadSavedEmployees() {
+            const savedEmployees = localStorage.getItem('employees');
+            if (savedEmployees) {
+                const loadedEmployees = JSON.parse(savedEmployees);
+                Object.assign(employees, loadedEmployees);
+            }
+        }
+
+        // Мэдэгдэлийн тохиргоо харуулах
+        function showNotificationSettings() {
+            document.getElementById('notificationModal').classList.remove('hidden');
+            loadNotificationSettings();
+        }
+
+        // Мэдэгдэлийн тохиргоо нуух
+        function hideNotificationSettings() {
+            document.getElementById('notificationModal').classList.add('hidden');
+        }
+
+        // Мэдэгдэлийн тохиргоо ачаалах
+        function loadNotificationSettings() {
+            const settings = localStorage.getItem('notificationSettings');
+            if (settings) {
+                const config = JSON.parse(settings);
+                
+                // Email тохиргоо
+                document.getElementById('smtpServer').value = config.smtp?.server || '';
+                document.getElementById('smtpPort').value = config.smtp?.port || '';
+                document.getElementById('smtpSSL').checked = config.smtp?.ssl || false;
+                document.getElementById('smtpEmail').value = config.smtp?.email || '';
+                document.getElementById('smtpPassword').value = config.smtp?.password || '';
+                
+                // SMS тохиргоо
+                document.getElementById('smsApiKey').value = config.sms?.apiKey || '';
+                document.getElementById('smsProvider').value = config.sms?.provider || 'twilio';
+                document.getElementById('smsFrom').value = config.sms?.from || '';
+                
+                // Мэдэгдлийн төрлүүд
+                document.getElementById('notifyLate').checked = config.notifications?.late !== false;
+                document.getElementById('notifyAbsent').checked = config.notifications?.absent !== false;
+                document.getElementById('notifyEarlyLeave').checked = config.notifications?.earlyLeave !== false;
+                document.getElementById('notifyOvertime').checked = config.notifications?.overtime !== false;
+                document.getElementById('notifyDailyReport').checked = config.notifications?.dailyReport !== false;
+                document.getElementById('notifyWeeklyReport').checked = config.notifications?.weeklyReport || false;
+            }
+        }
+
+        // Мэдэгдэлийн тохиргоо хадгалах
+        function saveNotificationSettings() {
+            const settings = {
+                smtp: {
+                    server: document.getElementById('smtpServer').value,
+                    port: document.getElementById('smtpPort').value,
+                    ssl: document.getElementById('smtpSSL').checked,
+                    email: document.getElementById('smtpEmail').value,
+                    password: document.getElementById('smtpPassword').value
+                },
+                sms: {
+                    apiKey: document.getElementById('smsApiKey').value,
+                    provider: document.getElementById('smsProvider').value,
+                    from: document.getElementById('smsFrom').value
+                },
+                notifications: {
+                    late: document.getElementById('notifyLate').checked,
+                    absent: document.getElementById('notifyAbsent').checked,
+                    earlyLeave: document.getElementById('notifyEarlyLeave').checked,
+                    overtime: document.getElementById('notifyOvertime').checked,
+                    dailyReport: document.getElementById('notifyDailyReport').checked,
+                    weeklyReport: document.getElementById('notifyWeeklyReport').checked
+                }
+            };
+            
+            localStorage.setItem('notificationSettings', JSON.stringify(settings));
+            showMessage('✅ Мэдэгдэлийн тохиргоо хадгалагдлаа!', 'bg-green-500/20');
+            hideNotificationSettings();
+            
+            // Автомат мэдэгдэл эхлүүлэх
+            startNotificationSystem();
+        }
+
+        // Email тест илгээх
+        function testEmailSettings() {
+            const server = document.getElementById('smtpServer').value;
+            const email = document.getElementById('smtpEmail').value;
+            
+            if (!server || !email) {
+                alert('❌ SMTP сервер болон email хаягийг бөглөнө үү!');
+                return;
+            }
+            
+            // Жишээ email илгээх (бодит системд SMTP холболт хийгдэнэ)
+            showMessage('📧 Email тест илгээгдэж байна...', 'bg-blue-500/20');
+            
+            setTimeout(() => {
+                showMessage('✅ Email амжилттай илгээгдлээ! (Demo режим)', 'bg-green-500/20');
+            }, 2000);
+        }
+
+        // SMS тест илгээх
+        function testSMSSettings() {
+            const apiKey = document.getElementById('smsApiKey').value;
+            const from = document.getElementById('smsFrom').value;
+            
+            if (!apiKey || !from) {
+                alert('❌ API түлхүүр болон илгээгчийн дугаарыг бөглөнө үү!');
+                return;
+            }
+            
+            // Жишээ SMS илгээх (бодит системд SMS API холболт хийгдэнэ)
+            showMessage('📱 SMS тест илгээгдэж байна...', 'bg-blue-500/20');
+            
+            setTimeout(() => {
+                showMessage('✅ SMS амжилттай илгээгдлээ! (Demo режим)', 'bg-green-500/20');
+            }, 1500);
+        }
+
+        // Дэлгэрэнгүй тайлан харуулах
+        function showDetailedReports() {
+            document.getElementById('detailedReportsModal').classList.remove('hidden');
+            generateReportData();
+        }
+
+        // Дэлгэрэнгүй тайлан нуух
+        function hideDetailedReports() {
+            document.getElementById('detailedReportsModal').classList.add('hidden');
+        }
+
+        // Тайлангийн өгөгдөл үүсгэх
+        function generateReportData() {
+            // Real-time статистик шинэчлэх
+            const stats = {
+                avgWorkHours: (7.5 + Math.random() * 1).toFixed(1),
+                onTimeRate: Math.floor(80 + Math.random() * 15) + '%',
+                productivityScore: Math.floor(85 + Math.random() * 15)
+            };
+            
+            document.getElementById('avgWorkHours').textContent = stats.avgWorkHours;
+            document.getElementById('onTimeRate').textContent = stats.onTimeRate;
+            document.getElementById('productivityScore').textContent = stats.productivityScore;
+        }
+
+        // Тайлан экспорт хийх
+        function exportReport(format) {
+            if (format === 'excel') {
+                // Excel файл үүсгэх (жишээ)
+                const csvContent = `Ажилтан,Албан тушаал,Ирц,Ажлын цаг,Статус
+Батбаяр,Програмист,100%,8.5,Сайн
+Сарангэрэл,Дизайнер,95%,8.2,Сайн
+Болдбаатар,Менежер,88%,7.8,Дундаж`;
+                
+                const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+                const link = document.createElement('a');
+                link.href = URL.createObjectURL(blob);
+                link.download = `TimeTrack_Report_${new Date().toISOString().split('T')[0]}.csv`;
+                link.click();
+                
+                showMessage('📊 Excel тайлан татагдлаа!', 'bg-green-500/20');
+            } else if (format === 'pdf') {
+                // PDF үүсгэх (жишээ)
+                showMessage('📄 PDF тайлан бэлтгэгдэж байна...', 'bg-blue-500/20');
+                
+                setTimeout(() => {
+                    showMessage('✅ PDF тайлан бэлэн! (Demo режим)', 'bg-green-500/20');
+                }, 2000);
+            }
+        }
+
+        // Мэдэгдлийн систем эхлүүлэх
+        function startNotificationSystem() {
+            // Цаг тутамд шалгах
+            setInterval(checkForNotifications, 60000); // 1 минут тутам
+            
+            // Өдөр тутмын тайлан (17:00-д)
+            setInterval(sendDailyReport, 3600000); // 1 цаг тутам шалгах
+        }
+
+        // Мэдэгдэл шалгах
+        function checkForNotifications() {
+            const settings = localStorage.getItem('notificationSettings');
+            if (!settings) return;
+            
+            const config = JSON.parse(settings);
+            const now = new Date();
+            const currentTime = now.getHours() * 60 + now.getMinutes();
+            
+            // Хоцорсон ажилтан шалгах (09:30-аас хойш)
+            if (config.notifications?.late && currentTime > 570) { // 09:30
+                checkLateEmployees();
+            }
+            
+            // Ирээгүй ажилтан шалгах (10:00-аас хойш)
+            if (config.notifications?.absent && currentTime > 600) { // 10:00
+                checkAbsentEmployees();
+            }
+        }
+
+        // Хоцорсон ажилтан шалгах
+        function checkLateEmployees() {
+            // Жишээ логик - бодит системд database-аас авна
+            const lateEmployees = ['Сарангэрэл', 'Болдбаатар'];
+            
+            if (lateEmployees.length > 0) {
+                sendNotification('late', `⚠️ Хоцорсон ажилтнууд: ${lateEmployees.join(', ')}`);
+            }
+        }
+
+        // Ирээгүй ажилтан шалгах
+        function checkAbsentEmployees() {
+            // Жишээ логик
+            const absentEmployees = ['Ажилтан 1', 'Ажилтан 2'];
+            
+            if (absentEmployees.length > 0) {
+                sendNotification('absent', `❌ Ирээгүй ажилтнууд: ${absentEmployees.join(', ')}`);
+            }
+        }
+
+        // Мэдэгдэл илгээх
+        function sendNotification(type, message) {
+            // Browser notification
+            if (Notification.permission === 'granted') {
+                new Notification('TimeTrack Pro', {
+                    body: message,
+                    icon: '⏰'
+                });
+            }
+            
+            // Email илгээх (жишээ)
+            console.log(`Email notification: ${message}`);
+            
+            // SMS илгээх (жишээ)
+            console.log(`SMS notification: ${message}`);
+        }
+
+        // Өдрийн тайлан илгээх
+        function sendDailyReport() {
+            const now = new Date();
+            if (now.getHours() === 17 && now.getMinutes() === 0) { // 17:00
+                const settings = localStorage.getItem('notificationSettings');
+                if (settings) {
+                    const config = JSON.parse(settings);
+                    if (config.notifications?.dailyReport) {
+                        const report = generateDailyReportText();
+                        sendNotification('daily_report', report);
+                    }
+                }
+            }
+        }
+
+        // Өдрийн тайлангийн текст үүсгэх
+        function generateDailyReportText() {
+            return `📊 Өнөөдрийн тайлан:
+• Ирсэн: 189/247 (76.5%)
+• Хоцорсон: 23 ажилтан
+• Дундаж ажлын цаг: 7.8 цаг
+• Бүтээмжийн оноо: 92%`;
+        }
+
+        // Browser notification зөвшөөрөл авах
+        function requestNotificationPermission() {
+            if ('Notification' in window && Notification.permission === 'default') {
+                Notification.requestPermission();
+            }
+        }
+
+        // Хуудас ачаалагдах үед
+        document.addEventListener('DOMContentLoaded', function() {
+            loadSavedEmployees();
+            requestNotificationPermission();
+            startNotificationSystem();
+            
+            // Real-time статистик шинэчлэх
+            setInterval(generateReportData, 30000); // 30 секунд тутам
+        });
+
+
+    </script>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'96d85a0910a61531',t:'MTc1NDkyMTc5Ni4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</html>
